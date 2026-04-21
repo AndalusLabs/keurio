@@ -50,7 +50,7 @@ export async function inviteMemberByEmail(input: {
   const url = `${appBaseUrl()}/invite/${token}`;
   try {
     const resend = getResend();
-    await resend.emails.send({
+    const { data, error: sendError } = await resend.emails.send({
       from: getResendFrom(),
       to: [email],
       subject: "You’ve been invited to Keurio",
@@ -62,8 +62,14 @@ export async function inviteMemberByEmail(input: {
         </div>
       `,
     });
+    // Resend returns { data, error } and usually does NOT throw — check error explicitly.
+    if (sendError) {
+      return { error: sendError.message };
+    }
+    if (process.env.NODE_ENV === "development" && data?.id) {
+      console.log("[invite] Resend email id:", data.id);
+    }
   } catch (e) {
-    // Invite exists even if email fails; surface a helpful error
     return { error: e instanceof Error ? e.message : "Email failed" };
   }
 
@@ -144,8 +150,17 @@ export async function acceptInvite(token: string) {
   });
   if (error || !orgId) return { error: error?.message ?? "Invalid invite" };
 
+  const { data: orgRow } = await supabase
+    .from("organizations")
+    .select("name")
+    .eq("id", orgId as string)
+    .maybeSingle();
+
   revalidatePath("/dashboard");
   revalidatePath("/team");
-  return { ok: true };
+  return {
+    ok: true as const,
+    organizationName: orgRow?.name?.trim() || "your organization",
+  };
 }
 

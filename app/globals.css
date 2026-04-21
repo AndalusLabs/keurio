@@ -26,28 +26,38 @@
     --input: 129 20% 88%;
     --ring: 131 61% 15%;
     --radius: 0.625rem;
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 222 47% 11%;
+    --sidebar-accent: 129 25% 92%;
+    --sidebar-border: 129 20% 88%;
   }
 
+  /* Linear-style dark: neutral surfaces; mint primary only for buttons / active UI */
   .dark {
-    --background: 131 40% 6%;
-    --foreground: 129 30% 95%;
-    --card: 131 35% 8%;
-    --card-foreground: 129 30% 95%;
-    --popover: 131 35% 8%;
-    --popover-foreground: 129 30% 95%;
-    --primary: 129 36% 78%;
-    --primary-foreground: 131 61% 12%;
-    --secondary: 131 30% 16%;
-    --secondary-foreground: 129 30% 95%;
-    --muted: 131 25% 18%;
-    --muted-foreground: 215 16% 65%;
-    --accent: 131 45% 22%;
-    --accent-foreground: 129 36% 85%;
+    --background: 0 0% 6.7%; /* #111111 */
+    --foreground: 0 0% 100%; /* #ffffff */
+    --card: 0 0% 10.2%; /* #1a1a1a */
+    --card-foreground: 0 0% 100%;
+    --popover: 0 0% 10.2%; /* #1a1a1a */
+    --popover-foreground: 0 0% 100%;
+    /* Primary actions: mint fill, dark green text */
+    --primary: 129 36% 78%; /* #b2dbb8 */
+    --primary-foreground: 131 61% 15%; /* #0f3e18 */
+    --secondary: 0 0% 13.3%; /* #222222 */
+    --secondary-foreground: 0 0% 100%;
+    --muted: 0 0% 11.8%; /* #1e1e1e */
+    --muted-foreground: 0 0% 63%; /* #a0a0a0 */
+    --accent: 0 0% 11.8%; /* #1e1e1e — row hover / subtle surfaces */
+    --accent-foreground: 0 0% 100%;
     --destructive: 0 63% 40%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 131 25% 18%;
-    --input: 131 25% 18%;
-    --ring: 129 36% 78%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 16.5%; /* #2a2a2a */
+    --input: 0 0% 13.3%; /* #222222 */
+    --ring: 0 0% 40%;
+    --sidebar-background: 0 0% 8.6%; /* #161616 */
+    --sidebar-foreground: 0 0% 88%; /* #e0e0e0 */
+    --sidebar-accent: 0 0% 13.3%; /* #222222 */
+    --sidebar-border: 0 0% 16.5%; /* #2a2a2a */
   }
 }
 

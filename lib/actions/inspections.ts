@@ -9,6 +9,7 @@ export async function createInspection(formData: {
   title: string;
   clientId: string;
   templateId: string;
+  location?: string;
 }) {
   const supabase = await createClient();
   const {
@@ -41,6 +42,7 @@ export async function createInspection(formData: {
 
   const siteParts = [client.company_name, client.city].filter(Boolean);
   const siteName = siteParts.length ? siteParts.join(" · ") : client.company_name;
+  const location = formData.location?.trim() ?? "";
 
   const { data: inspection, error: insErr } = await supabase
     .from("inspections")
@@ -50,7 +52,8 @@ export async function createInspection(formData: {
       title: formData.title.trim(),
       client_id: formData.clientId,
       organization_id: ctx.organizationId,
-      site_name: siteName,
+      location: location || null,
+      site_name: location || siteName,
       status: "in_progress",
     })
     .select("id")
@@ -154,6 +157,48 @@ export async function completeInspection(inspectionId: string) {
   revalidatePath("/");
   revalidatePath(`/inspections/${inspectionId}`);
   revalidatePath("/run");
+  return { ok: true };
+}
+
+export async function deleteInspection(inspectionId: string) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Unauthorized" };
+  const ctx = await getOrgContext();
+  if (!ctx || ctx.role !== "admin") return { error: "Forbidden" };
+
+  const { data: photoRows, error: photoErr } = await supabase
+    .from("inspection_results")
+    .select("photos(storage_path)")
+    .eq("inspection_id", inspectionId);
+  if (photoErr) return { error: photoErr.message };
+
+  const storagePaths =
+    photoRows
+      ?.flatMap((row) =>
+        (row.photos as Array<{ storage_path: string }> | null | undefined) ?? []
+      )
+      .map((p) => p.storage_path)
+      .filter(Boolean) ?? [];
+
+  if (storagePaths.length) {
+    const { error: storageErr } = await supabase.storage
+      .from("inspection-photos")
+      .remove(storagePaths);
+    if (storageErr) return { error: storageErr.message };
+  }
+
+  const { error } = await supabase
+    .from("inspections")
+    .delete()
+    .eq("id", inspectionId)
+    .eq("organization_id", ctx.organizationId);
+
+  if (error) return { error: error.message };
+  revalidatePath("/");
+  revalidatePath("/inspections");
   return { ok: true };
 }
 

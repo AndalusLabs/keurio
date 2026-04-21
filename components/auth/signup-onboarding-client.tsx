@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Building2 } from "lucide-react";
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -16,6 +16,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import { finishSignupOnboarding } from "@/lib/actions/onboarding";
 import { createClient } from "@/lib/supabase/client";
+import { safePostAuthPath } from "@/lib/utils/auth-redirect";
 
 const emailSchema = z.object({
   email: z.string().email("Enter a valid email"),
@@ -39,6 +40,10 @@ type Step = "intro" | "email" | "verify" | "profile" | "welcome";
 
 export function SignupOnboardingClient() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const inviteNext = safePostAuthPath(searchParams.get("next"));
+  const loginHref = inviteNext ? `/login?next=${encodeURIComponent(inviteNext)}` : "/login";
+
   const [step, setStep] = useState<Step>("intro");
   const [busy, setBusy] = useState(false);
   const [signedUpEmail, setSignedUpEmail] = useState("");
@@ -96,6 +101,11 @@ export function SignupOnboardingClient() {
     setPendingPassword(values.password);
 
     if (data.session) {
+      if (inviteNext) {
+        router.push(inviteNext);
+        router.refresh();
+        return;
+      }
       setStep("profile");
       return;
     }
@@ -121,6 +131,11 @@ export function SignupOnboardingClient() {
         description: "Check the code from your email and try again.",
         variant: "destructive",
       });
+      return;
+    }
+    if (inviteNext) {
+      router.push(inviteNext);
+      router.refresh();
       return;
     }
     setStep("profile");
@@ -180,7 +195,7 @@ export function SignupOnboardingClient() {
                 Continue with Email
               </Button>
               <Button variant="outline" className="w-full" asChild>
-                <Link href="/login">I already have an account</Link>
+                <Link href={loginHref}>I already have an account</Link>
               </Button>
             </div>
           ) : null}
@@ -279,7 +294,7 @@ export function SignupOnboardingClient() {
                 className="w-full"
                 size="lg"
                 onClick={() => {
-                  router.push("/dashboard");
+                  router.push(inviteNext ?? "/dashboard");
                   router.refresh();
                 }}
               >

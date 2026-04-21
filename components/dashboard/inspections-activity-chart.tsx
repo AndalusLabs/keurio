@@ -32,7 +32,7 @@ export function InspectionsActivityChart({ data, monthLabel }: Props) {
   return (
     <Card className="border-border/80 shadow-sm">
       <CardHeader className="pb-2">
-        <CardTitle className="text-base font-semibold text-primary">
+        <CardTitle className="text-base font-semibold text-foreground">
           Activity — {monthLabel}
         </CardTitle>
         <CardDescription>

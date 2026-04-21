@@ -25,7 +25,6 @@ export function useUnsavedChanges(isDirty: boolean) {
         return;
       }
       if (url.origin !== window.location.origin) return;
-      if (url.pathname === "/settings") return;
       if (!window.confirm("You have unsaved changes. Leave without saving?")) {
         e.preventDefault();
         e.stopPropagation();

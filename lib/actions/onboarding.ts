@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { copyDefaultTemplatesToOrganization } from "@/lib/default-templates";
 
 export async function createOrganization(formData: { name: string }) {
   const supabase = await createClient();
@@ -20,9 +21,19 @@ export async function createOrganization(formData: { name: string }) {
   );
   if (error || !orgId) return { error: error?.message ?? "Could not create org" };
 
+  const copyRes = await copyDefaultTemplatesToOrganization(
+    supabase,
+    orgId as string,
+    user.id
+  );
+  if ("error" in copyRes) {
+    return { error: copyRes.error };
+  }
+
   revalidatePath("/dashboard");
   revalidatePath("/inspections");
   revalidatePath("/clients");
+  revalidatePath("/templates");
   redirect("/dashboard");
 }
 
@@ -53,10 +64,20 @@ export async function finishSignupOnboarding(formData: {
   );
   if (error || !orgId) return { error: error?.message ?? "Could not create workspace" };
 
+  const copyRes = await copyDefaultTemplatesToOrganization(
+    supabase,
+    orgId as string,
+    user.id
+  );
+  if ("error" in copyRes) {
+    return { error: copyRes.error };
+  }
+
   revalidatePath("/dashboard");
   revalidatePath("/inspections");
   revalidatePath("/clients");
   revalidatePath("/team");
+  revalidatePath("/templates");
   return { ok: true };
 }
 

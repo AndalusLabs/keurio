@@ -44,6 +44,7 @@ export async function saveCompanyProfile(values: {
 
   if (error) return { error: error.message };
   revalidatePath("/settings");
+  revalidatePath("/settings/workspace");
   revalidatePath("/");
   return { ok: true };
 }
@@ -79,6 +80,7 @@ export async function saveUserProfile(values: {
 
   if (error) return { error: error.message };
   revalidatePath("/settings");
+  revalidatePath("/settings/workspace");
   return { ok: true };
 }
 
@@ -134,6 +136,7 @@ export async function uploadCompanyLogo(formData: FormData) {
   }
 
   revalidatePath("/settings");
+  revalidatePath("/settings/workspace");
   return { ok: true, path };
 }
 
@@ -189,5 +192,6 @@ export async function uploadSignature(formData: FormData) {
   }
 
   revalidatePath("/settings");
+  revalidatePath("/settings/workspace");
   return { ok: true, path };
 }

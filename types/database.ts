@@ -46,24 +46,30 @@ export type Database = {
       checklist_templates: {
         Row: {
           id: string;
-          user_id: string;
+          user_id: string | null;
           organization_id: string | null;
           name: string;
           created_at: string;
+          is_default: boolean;
+          is_system: boolean;
         };
         Insert: {
           id?: string;
-          user_id: string;
+          user_id?: string | null;
           organization_id?: string | null;
           name: string;
           created_at?: string;
+          is_default?: boolean;
+          is_system?: boolean;
         };
         Update: {
           id?: string;
-          user_id?: string;
+          user_id?: string | null;
           organization_id?: string | null;
           name?: string;
           created_at?: string;
+          is_default?: boolean;
+          is_system?: boolean;
         };
         Relationships: DbRelationship[];
       };
@@ -142,6 +148,7 @@ export type Database = {
           user_id: string;
           template_id: string;
           title: string;
+          location: string | null;
           site_name: string | null;
           client_id: string | null;
           organization_id: string | null;
@@ -154,6 +161,7 @@ export type Database = {
           user_id: string;
           template_id: string;
           title: string;
+          location?: string | null;
           site_name?: string | null;
           client_id?: string | null;
           organization_id?: string | null;
@@ -166,6 +174,7 @@ export type Database = {
           user_id?: string;
           template_id?: string;
           title?: string;
+          location?: string | null;
           site_name?: string | null;
           client_id?: string | null;
           organization_id?: string | null;
@@ -396,6 +405,11 @@ export type Database = {
       };
     };
     Views: Record<string, never>;
-    Functions: Record<string, never>;
+    Functions: {
+      ensure_org_default_templates: {
+        Args: { p_org_id: string };
+        Returns: undefined;
+      };
+    };
   };
 };

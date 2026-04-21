@@ -45,12 +45,21 @@ const inviteSchema = z.object({
 
 type InviteValues = z.infer<typeof inviteSchema>;
 
+const MEMBER_RESTRICTION_TOOLTIP = "Only Admins can invite members";
+
 function roleBadge(role: "admin" | "technician") {
   if (role === "admin") return <Badge variant="default">Admin</Badge>;
   return <Badge variant="secondary">Member</Badge>;
 }
 
-export function TeamAdminClient({ members }: { members: TeamMember[] }) {
+export function TeamAdminClient({
+  members,
+  canManage = true,
+}: {
+  members: TeamMember[];
+  /** When false, list is read-only (members can view team, not invite or edit roles). */
+  canManage?: boolean;
+}) {
   const router = useRouter();
   const [inviteSheetOpen, setInviteSheetOpen] = React.useState(false);
   const [editSheetOpen, setEditSheetOpen] = React.useState(false);
@@ -107,12 +116,23 @@ export function TeamAdminClient({ members }: { members: TeamMember[] }) {
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-3">
         <p className="text-sm text-muted-foreground">
-          Manage members in your organization.
+          {canManage ? "Manage members in your organization." : "Members in your organization."}
         </p>
-        <Button type="button" onClick={() => setInviteSheetOpen(true)} className="gap-2">
-          <MailPlus className="h-4 w-4" />
-          Invite
-        </Button>
+        <span title={!canManage ? MEMBER_RESTRICTION_TOOLTIP : undefined} className="inline-flex">
+          <Button
+            type="button"
+            disabled={!canManage}
+            onClick={() => {
+              if (!canManage) return;
+              setInviteSheetOpen(true);
+            }}
+            className="gap-2"
+            aria-label={!canManage ? MEMBER_RESTRICTION_TOOLTIP : undefined}
+          >
+            <MailPlus className="h-4 w-4" aria-hidden />
+            Invite
+          </Button>
+        </span>
       </div>
 
       <Card className="border-border/80 shadow-sm">
@@ -130,7 +150,9 @@ export function TeamAdminClient({ members }: { members: TeamMember[] }) {
                     <TableHead>Name</TableHead>
                     <TableHead>Email</TableHead>
                     <TableHead>Role</TableHead>
-                    <TableHead className="w-[56px] text-right"> </TableHead>
+                    <TableHead className="w-[56px] text-right">
+                      {canManage ? <span className="sr-only">Edit</span> : null}
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -144,16 +166,26 @@ export function TeamAdminClient({ members }: { members: TeamMember[] }) {
                       </TableCell>
                       <TableCell>{roleBadge(m.role)}</TableCell>
                       <TableCell className="text-right">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-muted-foreground hover:bg-accent/60 hover:text-primary"
-                          onClick={() => openEdit(m)}
-                          aria-label="Edit role"
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
+                        {canManage ? (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-muted-foreground hover:bg-accent/60 hover:text-primary"
+                            onClick={() => openEdit(m)}
+                            aria-label="Edit role"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                        ) : (
+                          <span
+                            className="inline-flex h-8 w-8 cursor-not-allowed items-center justify-center text-muted-foreground/50"
+                            title={MEMBER_RESTRICTION_TOOLTIP}
+                            aria-label={MEMBER_RESTRICTION_TOOLTIP}
+                          >
+                            <Pencil className="h-4 w-4 line-through" strokeWidth={1.75} aria-hidden />
+                          </span>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -164,6 +196,7 @@ export function TeamAdminClient({ members }: { members: TeamMember[] }) {
         </CardContent>
       </Card>
 
+      {canManage ? (
       <Sheet open={inviteSheetOpen} onOpenChange={setInviteSheetOpen}>
         <SheetContent className="sm:max-w-md">
           <SheetHeader>
@@ -207,7 +240,9 @@ export function TeamAdminClient({ members }: { members: TeamMember[] }) {
           </form>
         </SheetContent>
       </Sheet>
+      ) : null}
 
+      {canManage ? (
       <Sheet open={editSheetOpen} onOpenChange={setEditSheetOpen}>
         <SheetContent className="sm:max-w-md">
           <SheetHeader>
@@ -252,6 +287,7 @@ export function TeamAdminClient({ members }: { members: TeamMember[] }) {
           </div>
         </SheetContent>
       </Sheet>
+      ) : null}
     </div>
   );
 }

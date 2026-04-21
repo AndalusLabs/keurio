@@ -20,6 +20,7 @@ import {
   ChevronRight,
   MoreHorizontal,
   SlidersHorizontal,
+  Trash2,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -27,6 +28,16 @@ import * as React from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -51,6 +62,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { deleteInspection } from "@/lib/actions/inspections";
+import { toast } from "@/hooks/use-toast";
 import { formatInspectionDate } from "@/lib/utils/date";
 import { cn } from "@/lib/utils";
 import type { InspectionListRow } from "@/types";
@@ -61,17 +74,6 @@ const STATUS_ORDER: Record<InspectionStatus, number> = {
   in_progress: 1,
   completed: 2,
 };
-
-function statusLabel(s: InspectionStatus) {
-  switch (s) {
-    case "completed":
-      return "Completed";
-    case "in_progress":
-      return "In progress";
-    default:
-      return "Draft";
-  }
-}
 
 function StatusBadge({ status }: { status: InspectionStatus }) {
   switch (status) {
@@ -90,8 +92,16 @@ function sortIcon(sorted: false | "asc" | "desc") {
   return <ArrowUpDown className="ml-1 h-3.5 w-3.5 opacity-50" />;
 }
 
-export function InspectionsDataTable({ data }: { data: InspectionListRow[] }) {
+export function InspectionsDataTable({
+  data,
+  canDelete,
+}: {
+  data: InspectionListRow[];
+  canDelete: boolean;
+}) {
   const router = useRouter();
+  const [deleteTargetId, setDeleteTargetId] = React.useState<string | null>(null);
+  const [deleting, setDeleting] = React.useState(false);
   const [sorting, setSorting] = React.useState<SortingState>([
     { id: "created_at", desc: true },
   ]);
@@ -132,25 +142,32 @@ export function InspectionsDataTable({ data }: { data: InspectionListRow[] }) {
         enableHiding: false,
       },
       {
-        id: "location",
-        accessorFn: (row) =>
-          row.clients?.company_name ?? row.site_name ?? "",
-        header: "Location",
+        id: "inspection_name",
+        header: "Inspection",
+        accessorFn: (row) => row.title ?? "",
         cell: ({ row }) => (
-          <span className="max-w-[160px] truncate">
-            {row.original.clients?.company_name?.trim() ||
-              row.original.site_name?.trim() ||
-              "—"}
+          <span className="max-w-[200px] truncate font-medium text-primary">
+            {row.original.title?.trim() || "—"}
           </span>
         ),
       },
       {
-        id: "company",
-        header: "Company",
-        accessorFn: (row) => row.companyName ?? "",
+        id: "client",
+        header: "Client",
+        accessorFn: (row) => row.clients?.company_name ?? "",
         cell: ({ row }) => (
-          <span className="max-w-[160px] truncate">
-            {row.original.companyName ?? "—"}
+          <span className="max-w-[180px] truncate">
+            {row.original.clients?.company_name?.trim() || "—"}
+          </span>
+        ),
+      },
+      {
+        id: "location",
+        header: "Location",
+        accessorFn: (row) => row.location ?? "",
+        cell: ({ row }) => (
+          <span className="max-w-[180px] truncate">
+            {row.original.location?.trim() || "—"}
           </span>
         ),
       },
@@ -251,6 +268,15 @@ export function InspectionsDataTable({ data }: { data: InspectionListRow[] }) {
                       Download PDF
                     </a>
                   </DropdownMenuItem>
+                  {canDelete ? (
+                    <DropdownMenuItem
+                      className="text-destructive focus:text-destructive"
+                      onClick={() => setDeleteTargetId(id)}
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Delete inspection
+                    </DropdownMenuItem>
+                  ) : null}
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
@@ -260,7 +286,7 @@ export function InspectionsDataTable({ data }: { data: InspectionListRow[] }) {
         enableHiding: false,
       },
     ],
-    []
+    [canDelete]
   );
 
   const table = useReactTable({
@@ -281,12 +307,10 @@ export function InspectionsDataTable({ data }: { data: InspectionListRow[] }) {
         .toLowerCase()
         .trim();
       if (!q) return true;
-      const loc = (
-        row.original.clients?.company_name ??
-        row.original.site_name ??
-        ""
-      ).toLowerCase();
-      return loc.includes(q);
+      const name = (row.original.title ?? "").toLowerCase();
+      const client = (row.original.clients?.company_name ?? "").toLowerCase();
+      const location = (row.original.location ?? "").toLowerCase();
+      return name.includes(q) || client.includes(q) || location.includes(q);
     },
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
@@ -302,23 +326,42 @@ export function InspectionsDataTable({ data }: { data: InspectionListRow[] }) {
   const selected = table.getFilteredSelectedRowModel().rows.length;
 
   const columnLabel: Record<string, string> = {
+    inspection_name: "Inspection",
+    client: "Client",
     location: "Location",
-    company: "Company",
     template: "Template",
     status: "Status",
     created_at: "Date",
   };
+
+  async function confirmDeleteInspection() {
+    if (!deleteTargetId) return;
+    setDeleting(true);
+    const res = await deleteInspection(deleteTargetId);
+    setDeleting(false);
+    if (res.error) {
+      toast({
+        title: "Could not delete inspection",
+        description: res.error,
+        variant: "destructive",
+      });
+      return;
+    }
+    toast({ title: "Inspection deleted" });
+    setDeleteTargetId(null);
+    router.refresh();
+  }
 
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="max-w-sm flex-1">
           <Label htmlFor="inspection-filter" className="sr-only">
-            Filter by location
+            Filter by inspection or client
           </Label>
           <Input
             id="inspection-filter"
-            placeholder="Filter by location…"
+            placeholder="Filter by inspection or client…"
             value={globalFilter ?? ""}
             onChange={(e) => setGlobalFilter(e.target.value)}
             className="h-9 border-border/80 focus-visible:ring-primary"
@@ -454,6 +497,37 @@ export function InspectionsDataTable({ data }: { data: InspectionListRow[] }) {
           </Button>
         </div>
       </div>
+
+      <AlertDialog
+        open={!!deleteTargetId}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTargetId(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this inspection?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. The inspection results and attached
+              photos will be permanently removed. Are you sure you want to
+              continue?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                void confirmDeleteInspection();
+              }}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting ? "Deleting…" : "Delete inspection"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

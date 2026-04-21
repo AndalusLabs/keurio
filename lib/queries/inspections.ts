@@ -93,17 +93,38 @@ export async function getInspectionDetail(
   return row;
 }
 
-export async function getTemplatesForUser() {
+export type TemplateListRow = {
+  id: string;
+  name: string;
+  created_at: string;
+  is_default: boolean;
+  is_system: boolean;
+  organization_id: string | null;
+};
+
+/** Org templates + global system templates not yet copied (same name) into the org. */
+export async function getTemplatesForUser(): Promise<TemplateListRow[]> {
   const supabase = await createClient();
   const ctx = await getOrgContext();
   if (!ctx) return [];
 
-  const { data, error } = await supabase
+  const { data: orgRows, error: orgErr } = await supabase
     .from("checklist_templates")
-    .select("id, name, created_at")
+    .select("id, name, created_at, is_default, is_system, organization_id")
     .eq("organization_id", ctx.organizationId)
     .order("created_at", { ascending: false });
 
-  if (error || !data) return [];
-  return data;
+  if (orgErr) return [];
+
+  const { data: globalRows } = await supabase
+    .from("checklist_templates")
+    .select("id, name, created_at, is_default, is_system, organization_id")
+    .eq("is_system", true)
+    .is("organization_id", null);
+
+  const orgNames = new Set((orgRows ?? []).map((r) => r.name.trim().toLowerCase()));
+  const globalsFiltered =
+    globalRows?.filter((g) => !orgNames.has(g.name.trim().toLowerCase())) ?? [];
+
+  return [...(orgRows ?? []), ...globalsFiltered];
 }

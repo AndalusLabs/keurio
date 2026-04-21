@@ -8,7 +8,8 @@ export function getResend() {
   return new Resend(key);
 }
 
+/** Resend test sender — works without a verified domain. Override with RESEND_FROM when you add your own domain. */
 export function getResendFrom() {
-  return process.env.RESEND_FROM ?? "Keurio <no-reply@keurio.local>";
+  return process.env.RESEND_FROM ?? "Keurio <onboarding@resend.dev>";
 }
 

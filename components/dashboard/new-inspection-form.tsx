@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { ClientCombobox } from "@/components/clients/client-combobox";
@@ -34,9 +34,10 @@ import { createInspection, createTemplate } from "@/lib/actions/inspections";
 import type { ClientRow } from "@/types";
 
 const schema = z.object({
-  title: z.string().min(1, "Title is required"),
+  title: z.string().min(1, "Inspection is required"),
   clientId: z.string().uuid("Select a client"),
   templateId: z.string().min(1, "Pick a template").uuid(),
+  location: z.string().trim().optional(),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -62,10 +63,50 @@ export function NewInspectionForm({
   const router = useRouter();
   const [templates, setTemplates] = useState(initialTemplates);
   const [dialogOpen, setDialogOpen] = useState(false);
+
+  const lastAutoTitleRef = useRef("");
+
+  useEffect(() => {
+    setTemplates(initialTemplates);
+  }, [initialTemplates]);
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { title: "", clientId: "", templateId: "" },
+    defaultValues: { title: "", clientId: "", templateId: "", location: "" },
   });
+
+  const selectedClientId = form.watch("clientId");
+  const selectedTemplateId = form.watch("templateId");
+  const titleValue = form.watch("title");
+
+  const selectedClientName = useMemo(
+    () => clients.find((c) => c.id === selectedClientId)?.company_name?.trim() ?? "",
+    [clients, selectedClientId]
+  );
+  const selectedTemplateName = useMemo(
+    () => templates.find((t) => t.id === selectedTemplateId)?.name?.trim() ?? "",
+    [templates, selectedTemplateId]
+  );
+
+  useEffect(() => {
+    if (!selectedClientName || !selectedTemplateName) return;
+    const now = new Date();
+    const date = now.toLocaleDateString("nl-NL", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+    const time = now.toLocaleTimeString("nl-NL", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    });
+    const autoTitle = `${selectedClientName} — ${date} ${time}`;
+    const current = titleValue?.trim() ?? "";
+    if (!current || current === lastAutoTitleRef.current) {
+      form.setValue("title", autoTitle, { shouldDirty: false, shouldValidate: true });
+      lastAutoTitleRef.current = autoTitle;
+    }
+  }, [form, selectedClientName, selectedTemplateName, titleValue]);
 
   const tplForm = useForm<TemplateForm>({
     resolver: zodResolver(templateSchema),
@@ -77,6 +118,7 @@ export function NewInspectionForm({
       title: values.title,
       clientId: values.clientId,
       templateId: values.templateId,
+      location: values.location,
     });
     if (res.error) {
       toast({ title: "Could not create", description: res.error, variant: "destructive" });
@@ -123,17 +165,6 @@ export function NewInspectionForm({
         </CardHeader>
         <CardContent>
           <form className="space-y-6" onSubmit={form.handleSubmit(onSubmit)}>
-            <div className="space-y-2">
-              <Label htmlFor="title">Title</Label>
-              <Input
-                id="title"
-                placeholder="e.g. North substation Q2"
-                {...form.register("title")}
-              />
-              {form.formState.errors.title ? (
-                <p className="text-xs text-destructive">{form.formState.errors.title.message}</p>
-              ) : null}
-            </div>
             <div className="space-y-2">
               <div className="flex items-center justify-between gap-2">
                 <Label>Client</Label>
@@ -229,6 +260,25 @@ export function NewInspectionForm({
                 <p className="text-xs text-destructive">
                   {form.formState.errors.templateId.message}
                 </p>
+              ) : null}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="location">Location (optional)</Label>
+              <Input
+                id="location"
+                placeholder="e.g. Postjesweg 12"
+                {...form.register("location")}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="title">Inspection</Label>
+              <Input
+                id="title"
+                placeholder="Auto-filled from client and date/time"
+                {...form.register("title")}
+              />
+              {form.formState.errors.title ? (
+                <p className="text-xs text-destructive">{form.formState.errors.title.message}</p>
               ) : null}
             </div>
             <Button

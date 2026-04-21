@@ -49,7 +49,7 @@ function NavLinks({
               "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
               active
                 ? "bg-primary text-primary-foreground"
-                : "text-muted-foreground hover:bg-accent/60 hover:text-accent-foreground"
+                : "text-sidebar-foreground/75 hover:bg-sidebar-accent hover:text-sidebar-foreground"
             )}
           >
             <Icon className="h-5 w-5 shrink-0" />
@@ -80,7 +80,7 @@ function SidebarChrome({
 }) {
   return (
     <>
-      <div className="flex h-14 shrink-0 items-center justify-between border-b border-border/80 px-4">
+      <div className="flex h-14 shrink-0 items-center justify-between border-b border-sidebar-border bg-sidebar px-4">
         <Logo href="/dashboard" height={26} />
         {showClose ? (
           <Button
@@ -145,7 +145,7 @@ export function DashboardLayoutClient({
             aria-label="Close menu"
             onClick={() => setMobileOpen(false)}
           />
-          <aside className="fixed inset-y-0 left-0 z-50 flex w-64 max-w-[85vw] flex-col border-r border-border/80 bg-card shadow-xl md:hidden">
+          <aside className="fixed inset-y-0 left-0 z-50 flex w-64 max-w-[85vw] flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground shadow-xl md:hidden">
             <SidebarChrome
               email={email}
               workspace={workspace}
@@ -159,7 +159,7 @@ export function DashboardLayoutClient({
         </>
       ) : null}
 
-      <aside className="fixed left-0 top-0 z-30 hidden h-dvh w-64 border-r border-border/80 bg-card md:flex md:flex-col">
+      <aside className="fixed left-0 top-0 z-30 hidden h-dvh w-64 border-r border-sidebar-border bg-sidebar text-sidebar-foreground md:flex md:flex-col">
         <SidebarChrome
           email={email}
           workspace={workspace}

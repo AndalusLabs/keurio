@@ -69,12 +69,12 @@ export function InspectionsMetricsDashboard({ metrics }: Props) {
                   {description}
                 </CardDescription>
               </div>
-              <div className="rounded-lg bg-accent/50 p-2 text-primary">
+              <div className="rounded-lg bg-accent/60 p-2 text-primary">
                 <Icon className="h-4 w-4" aria-hidden />
               </div>
             </CardHeader>
             <CardContent>
-              <p className="font-mono text-3xl font-semibold tabular-nums text-primary">
+              <p className="font-mono text-3xl font-semibold tabular-nums text-foreground">
                 {value.toLocaleString("nl-NL")}
               </p>
             </CardContent>

@@ -28,30 +28,20 @@ export default async function TeamPage() {
     );
   }
 
-  if (ctx.role !== "admin") {
-    return (
-      <div className="space-y-10">
-        <PageHeader
-          title="Team"
-          description="Invite colleagues and manage roles."
-        />
-        <EmptyState
-          title="Admin access required"
-          description="Only organization admins can manage team members."
-        />
-      </div>
-    );
-  }
-
   const members = (await getTeamMembers()) ?? [];
+  const canManage = ctx.role === "admin";
 
   return (
     <div className="space-y-10">
       <PageHeader
         title="Team"
-        description="Invite colleagues and manage roles."
+        description={
+          canManage
+            ? "Invite colleagues and manage roles."
+            : "People in your organization. Only admins can invite or change roles."
+        }
       />
-      <TeamAdminClient members={members} />
+      <TeamAdminClient members={members} canManage={canManage} />
     </div>
   );
 }

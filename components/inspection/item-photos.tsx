@@ -96,11 +96,11 @@ export function ItemPhotos({ resultId, photos, readOnly }: ItemPhotosProps) {
               type="button"
               disabled={uploading}
               onClick={() => inputRef.current?.click()}
-              className="flex h-24 w-24 flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-border text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary"
+              className="flex min-h-[44px] min-w-[44px] flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-border p-2 text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary sm:h-24 sm:w-24"
             >
-              <Camera className="h-8 w-8" />
-              <span className="text-xs font-medium">
-                {uploading ? "…" : "Add"}
+              <Camera className="h-7 w-7 shrink-0 sm:h-8 sm:w-8" aria-hidden />
+              <span className="text-center text-xs font-medium leading-tight">
+                {uploading ? "…" : "Add photo"}
               </span>
             </button>
           </>

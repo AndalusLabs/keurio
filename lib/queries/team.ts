@@ -15,9 +15,6 @@ export async function getTeamMembers(): Promise<TeamMember[] | null> {
   const ctx = await getOrgContext();
   if (!ctx) return null;
 
-  // Only admins can access; enforced in page too, but keep consistent.
-  if (ctx.role !== "admin") return null;
-
   const { data: members, error } = await supabase
     .from("organization_members")
     .select("id, user_id, role, created_at")

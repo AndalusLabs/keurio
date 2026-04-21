@@ -1,6 +1,7 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import type { Database } from "@/types/database";
+import { safePostAuthPath } from "@/lib/utils/auth-redirect";
 
 export async function updateSession(request: NextRequest) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -41,16 +42,23 @@ export async function updateSession(request: NextRequest) {
     request.nextUrl.pathname.startsWith("/_next") ||
     /\.(ico|png|jpg|jpeg|svg|gif|webp|txt)$/.test(request.nextUrl.pathname);
 
-  if (!user && !isAuthRoute && !isPublicAsset) {
+  if (!user && !isAuthRoute && !isPublicAsset && !isInviteRoute) {
     const next = request.nextUrl.clone();
     next.pathname = "/login";
     return NextResponse.redirect(next);
   }
 
   if (user && isLoginRoute) {
-    const next = request.nextUrl.clone();
-    next.pathname = "/dashboard";
-    return NextResponse.redirect(next);
+    const inviteNext = safePostAuthPath(request.nextUrl.searchParams.get("next"));
+    if (inviteNext) {
+      const next = request.nextUrl.clone();
+      next.pathname = inviteNext;
+      next.search = "";
+      return NextResponse.redirect(next);
+    }
+    const dash = request.nextUrl.clone();
+    dash.pathname = "/dashboard";
+    return NextResponse.redirect(dash);
   }
 
   // Organization gate: if logged in but no org membership, force onboarding.

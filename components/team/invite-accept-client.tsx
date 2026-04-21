@@ -1,54 +1,64 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Building2 } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import Link from "next/link";
+import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import { acceptInvite } from "@/lib/actions/team";
 import { useRouter } from "next/navigation";
 
-export function InviteAcceptClient({ token }: { token: string }) {
+export function InviteAcceptClient({
+  token,
+  organizationName,
+}: {
+  token: string;
+  organizationName: string;
+}) {
   const router = useRouter();
-  const [pending, setPending] = useState(false);
+  const [status, setStatus] = useState<"loading" | "error">("loading");
 
   useEffect(() => {
     void (async () => {
-      setPending(true);
       const res = await acceptInvite(token);
-      setPending(false);
-      if (res.error) {
-        toast({ title: "Invite failed", description: res.error, variant: "destructive" });
+      if ("error" in res && res.error) {
+        setStatus("error");
+        toast({ title: "Could not join", description: res.error, variant: "destructive" });
         return;
       }
-      toast({ title: "Welcome to the organization" });
-      router.push("/dashboard");
+      if ("ok" in res && res.ok) {
+        toast({
+          title: `Welcome to ${res.organizationName}!`,
+          description: "You're in.",
+        });
+      }
+      router.replace("/dashboard");
       router.refresh();
     })();
   }, [router, token]);
 
-  return (
-    <Card className="border-border/80 shadow-sm">
-      <CardHeader className="text-center">
-        <div className="mx-auto grid h-12 w-12 place-content-center rounded-xl bg-accent/60 text-primary">
-          <Building2 className="h-6 w-6" aria-hidden />
+  if (status === "error") {
+    return (
+      <Card className="w-full border-[#0f3e18]/15 shadow-sm">
+        <CardHeader className="text-center">
+          <CardTitle className="text-xl font-semibold text-[#0f3e18]">Could not complete</CardTitle>
+          <CardDescription>Try the invite link again or contact your admin.</CardDescription>
+        </CardHeader>
+        <div className="px-6 pb-6">
+          <Button type="button" className="w-full bg-[#0f3e18] text-[#b2dbb8] hover:bg-[#0f3e18]/90" asChild>
+            <Link href="/dashboard">Go to dashboard</Link>
+          </Button>
         </div>
-        <CardTitle className="text-xl text-primary">Accepting invite…</CardTitle>
-        <CardDescription>
-          {pending ? "This takes a moment." : "If you are not redirected, use the button below."}
-        </CardDescription>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="w-full border-[#0f3e18]/15 shadow-sm">
+      <CardHeader className="text-center">
+        <CardTitle className="text-xl font-semibold text-[#0f3e18]">Joining {organizationName}…</CardTitle>
+        <CardDescription>Taking you to your workspace.</CardDescription>
       </CardHeader>
-      <CardContent>
-        <Button
-          type="button"
-          className="w-full"
-          onClick={() => router.push("/dashboard")}
-          disabled={pending}
-        >
-          Go to dashboard
-        </Button>
-      </CardContent>
     </Card>
   );
 }
-

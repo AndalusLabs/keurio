@@ -66,11 +66,11 @@ export function WorkspaceSwitcher({
             )}
           >
             <Avatar className="h-8 w-8">
-              <AvatarFallback className="bg-primary text-xs font-semibold text-accent">
+              <AvatarFallback className="bg-primary text-xs font-semibold text-primary-foreground">
                 {initials}
               </AvatarFallback>
             </Avatar>
-            <span className="min-w-0 flex-1 truncate text-left text-sm font-medium leading-none text-foreground">
+            <span className="min-w-0 flex-1 truncate text-left text-sm font-medium leading-none text-sidebar-foreground">
               {organizationName}
             </span>
             <ChevronDown className="!h-3.5 !w-3.5 shrink-0 opacity-50" aria-hidden />
@@ -78,7 +78,7 @@ export function WorkspaceSwitcher({
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="w-64 font-sans" sideOffset={6}>
           <div className="space-y-2 px-2 py-2">
-            <p className="truncate text-sm font-semibold leading-tight text-primary">
+            <p className="truncate text-sm font-semibold leading-tight text-foreground">
               {menuTitle}
             </p>
             <Badge
@@ -92,7 +92,7 @@ export function WorkspaceSwitcher({
             ) : null}
           </div>
           <DropdownMenuItem asChild>
-            <Link href="/settings" className="flex cursor-pointer items-center" onClick={onNavigate}>
+            <Link href="/settings/workspace" className="flex cursor-pointer items-center" onClick={onNavigate}>
               <Settings className="mr-2 h-4 w-4 text-primary" />
               Settings
             </Link>

@@ -28,12 +28,15 @@ export default async function RunInspectionPage({
   if (!data) notFound();
 
   const items = toRunItems(data);
+  const inspectionType =
+    data.checklist_templates?.name?.trim() || "Inspection";
 
   return (
     <InspectionRunClient
       inspectionId={data.id}
       title={data.title}
       inspectionStatus={data.status}
+      inspectionType={inspectionType}
       items={items}
     />
   );
