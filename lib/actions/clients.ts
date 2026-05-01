@@ -84,3 +84,27 @@ export async function deleteClient(id: string) {
   revalidatePath("/inspections");
   return { ok: true };
 }
+
+export async function deleteClients(clientIds: string[]) {
+  const ids = Array.from(
+    new Set(clientIds.map((id) => id.trim()).filter(Boolean))
+  );
+  if (ids.length === 0) return { error: "No clients selected" };
+
+  const supabase = await createClient();
+  const ctx = await getOrgContext();
+  if (!ctx) return { error: "Unauthorized" };
+
+  const { error } = await supabase
+    .from("clients")
+    .delete()
+    .in("id", ids)
+    .eq("organization_id", ctx.organizationId);
+
+  if (error) return { error: error.message };
+
+  revalidatePath("/clients");
+  revalidatePath("/inspections/new");
+  revalidatePath("/inspections");
+  return { ok: true, deleted: ids.length };
+}

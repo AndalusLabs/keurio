@@ -202,6 +202,54 @@ export async function deleteInspection(inspectionId: string) {
   return { ok: true };
 }
 
+export async function deleteInspections(inspectionIds: string[]) {
+  const ids = Array.from(
+    new Set(inspectionIds.map((id) => id.trim()).filter(Boolean))
+  );
+  if (ids.length === 0) return { error: "No inspections selected" };
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Unauthorized" };
+  const ctx = await getOrgContext();
+  if (!ctx || ctx.role !== "admin") return { error: "Forbidden" };
+
+  const { data: photoRows, error: photoErr } = await supabase
+    .from("inspection_results")
+    .select("photos(storage_path)")
+    .in("inspection_id", ids);
+
+  if (photoErr) return { error: photoErr.message };
+
+  const storagePaths =
+    photoRows
+      ?.flatMap((row) =>
+        (row.photos as Array<{ storage_path: string }> | null | undefined) ?? []
+      )
+      .map((p) => p.storage_path)
+      .filter(Boolean) ?? [];
+
+  if (storagePaths.length) {
+    const { error: storageErr } = await supabase.storage
+      .from("inspection-photos")
+      .remove(storagePaths);
+    if (storageErr) return { error: storageErr.message };
+  }
+
+  const { error } = await supabase
+    .from("inspections")
+    .delete()
+    .in("id", ids)
+    .eq("organization_id", ctx.organizationId);
+
+  if (error) return { error: error.message };
+  revalidatePath("/");
+  revalidatePath("/inspections");
+  return { ok: true, deleted: ids.length };
+}
+
 export async function createTemplate(formData: {
   name: string;
   items: string[];

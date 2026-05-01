@@ -138,6 +138,49 @@ export async function removeMember(input: { memberId: string }) {
   return { ok: true };
 }
 
+export async function removeMembers(memberIds: string[]) {
+  const admin = await requireAdmin();
+  if ("error" in admin) return { error: admin.error };
+  const { supabase, ctx } = admin;
+
+  const ids = Array.from(
+    new Set(memberIds.map((id) => id.trim()).filter(Boolean))
+  );
+  if (ids.length === 0) return { error: "No members selected" };
+
+  const { data: allMembers, error: listErr } = await supabase
+    .from("organization_members")
+    .select("id, user_id, role")
+    .eq("organization_id", ctx.organizationId);
+
+  if (listErr || !allMembers?.length) {
+    return { error: listErr?.message ?? "Could not load members" };
+  }
+
+  const idSet = new Set(ids);
+  const invalid = ids.some((id) => !allMembers.some((m) => m.id === id));
+  if (invalid) return { error: "One or more members are invalid" };
+
+  const remaining = allMembers.filter((m) => !idSet.has(m.id));
+  if (remaining.length < 1) {
+    return { error: "You cannot remove every member from the organization." };
+  }
+  const remainingAdmins = remaining.filter((m) => m.role === "admin").length;
+  if (remainingAdmins < 1) {
+    return { error: "At least one admin must remain in the organization." };
+  }
+
+  const { error } = await supabase
+    .from("organization_members")
+    .delete()
+    .in("id", ids)
+    .eq("organization_id", ctx.organizationId);
+
+  if (error) return { error: error.message };
+  revalidatePath("/team");
+  return { ok: true, removed: ids.length };
+}
+
 export async function acceptInvite(token: string) {
   const supabase = await createClient();
   const {

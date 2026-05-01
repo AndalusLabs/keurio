@@ -2,6 +2,7 @@
 
 import {
   type ColumnDef,
+  type RowSelectionState,
   type VisibilityState,
   flexRender,
   getCoreRowModel,
@@ -9,7 +10,7 @@ import {
   getPaginationRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { Download, Pencil, Plus, SlidersHorizontal, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import * as React from "react";
 import { ClientFormSheet } from "@/components/clients/client-form-sheet";
@@ -40,7 +41,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { deleteClient } from "@/lib/actions/clients";
+import { BulkActionBar } from "@/components/shared/bulk-action-bar";
+import { deleteClient, deleteClients } from "@/lib/actions/clients";
 import { toast } from "@/hooks/use-toast";
 import type { ClientRow } from "@/types";
 
@@ -65,10 +67,43 @@ export function ClientsDataTable({
   const [sheetOpen, setSheetOpen] = React.useState(false);
   const [editing, setEditing] = React.useState<ClientRow | null>(null);
   const [deleteTarget, setDeleteTarget] = React.useState<ClientRow | null>(null);
+  const [bulkDeleteIds, setBulkDeleteIds] = React.useState<string[] | null>(null);
   const [deleting, setDeleting] = React.useState(false);
+  const [rowSelection, setRowSelection] = React.useState<RowSelectionState>({});
 
   const columns = React.useMemo<ColumnDef<ClientRow>[]>(
     () => [
+      ...(canEdit
+        ? [
+            {
+              id: "select",
+              header: ({ table }) => (
+                <Checkbox
+                  checked={
+                    table.getIsAllPageRowsSelected()
+                      ? true
+                      : table.getIsSomePageRowsSelected()
+                        ? "indeterminate"
+                        : false
+                  }
+                  onCheckedChange={(v) => table.toggleAllPageRowsSelected(!!v)}
+                  aria-label="Select all"
+                  onClick={(e) => e.stopPropagation()}
+                />
+              ),
+              cell: ({ row }) => (
+                <Checkbox
+                  checked={row.getIsSelected()}
+                  onCheckedChange={(v) => row.toggleSelected(!!v)}
+                  aria-label="Select row"
+                  onClick={(e) => e.stopPropagation()}
+                />
+              ),
+              enableSorting: false,
+              enableHiding: false,
+            } as ColumnDef<ClientRow>,
+          ]
+        : []),
       {
         accessorKey: "company_name",
         header: "Company",
@@ -136,9 +171,12 @@ export function ClientsDataTable({
   const table = useReactTable({
     data: initialClients,
     columns,
-    state: { globalFilter, columnVisibility },
+    state: { globalFilter, columnVisibility, rowSelection },
     onGlobalFilterChange: setGlobalFilter,
     onColumnVisibilityChange: setColumnVisibility,
+    onRowSelectionChange: setRowSelection,
+    enableRowSelection: canEdit,
+    getRowId: (row) => row.id,
     globalFilterFn: (row, _columnId, filterValue) => {
       const q = String(filterValue ?? "")
         .toLowerCase()
@@ -154,6 +192,7 @@ export function ClientsDataTable({
   });
 
   const filtered = table.getFilteredRowModel().rows.length;
+  const selected = table.getFilteredSelectedRowModel().rows.length;
   const pageIndex = table.getState().pagination.pageIndex;
   const pageSize = table.getState().pagination.pageSize;
   const from = filtered === 0 ? 0 : pageIndex * pageSize + 1;
@@ -170,6 +209,26 @@ export function ClientsDataTable({
     }
     toast({ title: "Client removed" });
     setDeleteTarget(null);
+    router.refresh();
+  }
+
+  async function confirmBulkDelete() {
+    if (!bulkDeleteIds?.length) return;
+    setDeleting(true);
+    const res = await deleteClients(bulkDeleteIds);
+    setDeleting(false);
+    if (res.error) {
+      toast({ title: "Could not delete clients", description: res.error, variant: "destructive" });
+      return;
+    }
+    toast({
+      title:
+        bulkDeleteIds.length === 1
+          ? "Client removed"
+          : `${bulkDeleteIds.length} clients removed`,
+    });
+    setBulkDeleteIds(null);
+    table.resetRowSelection();
     router.refresh();
   }
 
@@ -192,6 +251,7 @@ export function ClientsDataTable({
           <Popover>
             <PopoverTrigger asChild>
               <Button type="button" variant="outline" size="sm" className="border-border/80">
+                <SlidersHorizontal className="mr-2 h-4 w-4" />
                 Columns
               </Button>
             </PopoverTrigger>
@@ -277,6 +337,12 @@ export function ClientsDataTable({
         <p className="text-sm text-muted-foreground">
           <span className="tabular-nums">
             {from}–{to} of {filtered} row(s)
+            {canEdit ? (
+              <>
+                {" "}
+                · {selected} selected
+              </>
+            ) : null}
           </span>
         </p>
         <div className="flex gap-2">
@@ -302,6 +368,36 @@ export function ClientsDataTable({
           </Button>
         </div>
       </div>
+
+      {canEdit ? (
+        <BulkActionBar
+          count={selected}
+          total={filtered}
+          entity="client"
+          onClear={() => table.resetRowSelection()}
+          actions={[
+            {
+              label: "Export CSV",
+              icon: Download,
+              onClick: () =>
+                toast({
+                  title: `Exporting ${selected} client${selected === 1 ? "" : "s"}…`,
+                }),
+            },
+            {
+              label: "Delete",
+              icon: Trash2,
+              variant: "destructive",
+              onClick: () => {
+                const ids = table
+                  .getFilteredSelectedRowModel()
+                  .rows.map((r) => r.original.id);
+                if (ids.length) setBulkDeleteIds(ids);
+              },
+            },
+          ]}
+        />
+      ) : null}
 
       {canEdit ? (
         <ClientFormSheet
@@ -335,6 +431,43 @@ export function ClientsDataTable({
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {deleting ? "Deleting…" : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        open={canEdit && !!bulkDeleteIds?.length}
+        onOpenChange={(o) => !o && setBulkDeleteIds(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Delete {bulkDeleteIds?.length === 1 ? "this client" : "these clients"}?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              This cannot be undone. Inspections linked to{" "}
+              {bulkDeleteIds && bulkDeleteIds.length > 1
+                ? "these clients"
+                : "this client"}{" "}
+              will keep their location text but will no longer be associated with the client record.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                void confirmBulkDelete();
+              }}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting
+                ? "Deleting…"
+                : bulkDeleteIds && bulkDeleteIds.length > 1
+                  ? `Delete ${bulkDeleteIds.length} clients`
+                  : "Delete"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

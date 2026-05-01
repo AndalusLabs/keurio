@@ -18,7 +18,7 @@ export function Logo({
 }: LogoProps) {
   const img = (
     <Image
-      src="/keurio_logo.png"
+      src="/keurio_logo_new.jpg"
       alt="Keurio"
       width={160}
       height={height}

@@ -4,28 +4,36 @@ import { cva, type VariantProps } from "class-variance-authority"
 
 import { cn } from "@/lib/utils"
 
+/**
+ * Keurio button — 36px primary height, 8px radius, tight 13px Geist.
+ * `default` carries the brand green with a 1px shadow-brand lift.
+ * `secondary` is a soft mint fill for emphasized-but-not-primary CTAs.
+ * `outline` is the workhorse secondary action.
+ */
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-[13px] font-medium tracking-[-0.005em] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 focus-visible:ring-offset-1 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
   {
     variants: {
       variant: {
         default:
-          "bg-primary text-primary-foreground shadow hover:bg-primary/90",
+          "bg-primary text-primary-foreground shadow-brand hover:bg-primary/92",
         destructive:
-          "bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90",
+          "bg-destructive text-destructive-foreground shadow-card hover:bg-destructive/90",
         outline:
-          "border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground",
+          "border border-border bg-background text-foreground shadow-card hover:bg-muted",
         secondary:
-          "bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80",
-        ghost: "hover:bg-accent hover:text-accent-foreground",
-        link: "text-primary underline-offset-4 hover:underline",
+          "bg-accent text-accent-foreground hover:bg-accent/85",
+        ghost:
+          "text-muted-foreground hover:bg-muted hover:text-foreground",
+        link:
+          "text-primary underline-offset-4 hover:underline",
         accent:
-          "bg-accent text-accent-foreground shadow hover:bg-accent/90 focus-visible:ring-primary",
+          "bg-accent text-accent-foreground shadow-card hover:bg-accent/85 focus-visible:ring-primary/30",
       },
       size: {
-        default: "h-9 px-4 py-2",
+        default: "h-9 px-3.5",
         sm: "h-8 rounded-md px-3 text-xs",
-        lg: "h-10 rounded-md px-8",
+        lg: "h-10 rounded-md px-6",
         icon: "h-9 w-9",
         touch: "min-h-[52px] min-w-[52px] rounded-lg px-6 text-base",
       },

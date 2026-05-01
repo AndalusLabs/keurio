@@ -18,6 +18,7 @@ import {
   ArrowUpDown,
   ChevronLeft,
   ChevronRight,
+  Download,
   MoreHorizontal,
   SlidersHorizontal,
   Trash2,
@@ -62,7 +63,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { deleteInspection } from "@/lib/actions/inspections";
+import { BulkActionBar } from "@/components/shared/bulk-action-bar";
+import { deleteInspection, deleteInspections } from "@/lib/actions/inspections";
 import { toast } from "@/hooks/use-toast";
 import { formatInspectionDate } from "@/lib/utils/date";
 import { cn } from "@/lib/utils";
@@ -101,6 +103,7 @@ export function InspectionsDataTable({
 }) {
   const router = useRouter();
   const [deleteTargetId, setDeleteTargetId] = React.useState<string | null>(null);
+  const [bulkDeleteIds, setBulkDeleteIds] = React.useState<string[] | null>(null);
   const [deleting, setDeleting] = React.useState(false);
   const [sorting, setSorting] = React.useState<SortingState>([
     { id: "created_at", desc: true },
@@ -352,6 +355,30 @@ export function InspectionsDataTable({
     router.refresh();
   }
 
+  async function confirmBulkDeleteInspections() {
+    if (!bulkDeleteIds?.length) return;
+    setDeleting(true);
+    const res = await deleteInspections(bulkDeleteIds);
+    setDeleting(false);
+    if (res.error) {
+      toast({
+        title: "Could not delete inspections",
+        description: res.error,
+        variant: "destructive",
+      });
+      return;
+    }
+    toast({
+      title:
+        bulkDeleteIds.length === 1
+          ? "Inspection deleted"
+          : `${bulkDeleteIds.length} inspections deleted`,
+    });
+    setBulkDeleteIds(null);
+    table.resetRowSelection();
+    router.refresh();
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -498,6 +525,38 @@ export function InspectionsDataTable({
         </div>
       </div>
 
+      <BulkActionBar
+        count={selected}
+        total={filtered}
+        entity="inspection"
+        onClear={() => table.resetRowSelection()}
+        actions={[
+          {
+            label: "Export CSV",
+            icon: Download,
+            onClick: () =>
+              toast({
+                title: `Exporting ${selected} inspection${selected === 1 ? "" : "s"}…`,
+              }),
+          },
+          ...(canDelete
+            ? [
+                {
+                  label: "Delete",
+                  icon: Trash2,
+                  variant: "destructive" as const,
+                  onClick: () => {
+                    const ids = table
+                      .getFilteredSelectedRowModel()
+                      .rows.map((r) => r.original.id);
+                    if (ids.length) setBulkDeleteIds(ids);
+                  },
+                },
+              ]
+            : []),
+        ]}
+      />
+
       <AlertDialog
         open={!!deleteTargetId}
         onOpenChange={(open) => {
@@ -524,6 +583,45 @@ export function InspectionsDataTable({
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {deleting ? "Deleting…" : "Delete inspection"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        open={!!bulkDeleteIds?.length}
+        onOpenChange={(open) => {
+          if (!open) setBulkDeleteIds(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Delete {bulkDeleteIds?.length === 1 ? "this inspection" : "these inspections"}?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone.{" "}
+              {bulkDeleteIds && bulkDeleteIds.length > 1
+                ? `${bulkDeleteIds.length} inspections and their attached photos will be permanently removed.`
+                : "The inspection results and attached photos will be permanently removed."}{" "}
+              Are you sure you want to continue?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                void confirmBulkDeleteInspections();
+              }}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting
+                ? "Deleting…"
+                : bulkDeleteIds && bulkDeleteIds.length > 1
+                  ? `Delete ${bulkDeleteIds.length} inspections`
+                  : "Delete inspection"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

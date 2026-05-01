@@ -2,62 +2,97 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * Keurio design tokens — premium B2B inspection platform.
+ * Light mode: warm-white canvas, soft slate borders, forest-green brand.
+ * Dark mode: Linear-style neutrals with mint as the "lit" primary.
+ */
+
 @layer base {
   :root {
-    --background: 210 40% 98%;
-    --foreground: 222 47% 11%;
-    --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    /* Surfaces */
+    --background: 210 20% 97%;           /* #f4f6f8  — app canvas */
+    --foreground: 222 32% 8%;            /* #0b1220  — headline text */
+    --card: 0 0% 100%;                   /* #ffffff  — card surface */
+    --card-foreground: 222 32% 8%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
-    /* Brand: #0f3e18 */
+    --popover-foreground: 222 32% 8%;
+
+    /* Brand — #0f3e18 */
     --primary: 131 61% 15%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 129 25% 92%;
-    --secondary-foreground: 131 61% 15%;
-    --muted: 129 20% 94%;
-    --muted-foreground: 215 16% 40%;
-    /* Brand light: #b2dbb8 */
+
+    /* Mint — #b2dbb8 (accent highlights, dark-mode primary) */
     --accent: 129 36% 78%;
     --accent-foreground: 131 61% 15%;
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 129 20% 88%;
-    --input: 129 20% 88%;
+
+    /* Subtle green fill used by selected rows, success bg, etc. */
+    --secondary: 131 40% 95%;            /* #ecf5ee */
+    --secondary-foreground: 131 61% 15%;
+
+    /* Text tiers */
+    --muted: 210 20% 96%;                /* #f2f4f7 */
+    --muted-foreground: 215 18% 40%;     /* #5b6472 — body */
+
+    /* Danger */
+    --destructive: 1 74% 42%;            /* #b42318 */
+    --destructive-foreground: 0 0% 100%;
+
+    /* Borders / inputs / rings */
+    --border: 214 24% 94%;               /* #eef1f5 — soft slate */
+    --input: 214 24% 92%;                /* #e6ebf1 */
     --ring: 131 61% 15%;
+
     --radius: 0.625rem;
+
+    /* Sidebar */
     --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 222 47% 11%;
-    --sidebar-accent: 129 25% 92%;
-    --sidebar-border: 129 20% 88%;
+    --sidebar-foreground: 222 32% 8%;
+    --sidebar-accent: 210 24% 97%;       /* #f4f6f9 — hover row */
+    --sidebar-border: 214 24% 94%;
+
+    /* Status semantic pairs (light) */
+    --status-pass-bg: 131 40% 93%;       /* #e8f6ea */
+    --status-pass-fg: 131 62% 23%;       /* #116329 */
+    --status-warn-bg: 36 100% 94%;       /* #fff7e6 */
+    --status-warn-fg: 36 100% 27%;       /* #8a5a00 */
+    --status-fail-bg: 6 100% 96%;        /* #fef2f0 */
+    --status-fail-fg: 1 74% 42%;
   }
 
-  /* Linear-style dark: neutral surfaces; mint primary only for buttons / active UI */
   .dark {
-    --background: 0 0% 6.7%; /* #111111 */
-    --foreground: 0 0% 100%; /* #ffffff */
-    --card: 0 0% 10.2%; /* #1a1a1a */
+    --background: 0 0% 6.7%;             /* #111111 */
+    --foreground: 0 0% 100%;
+    --card: 0 0% 10.2%;                  /* #1a1a1a */
     --card-foreground: 0 0% 100%;
-    --popover: 0 0% 10.2%; /* #1a1a1a */
+    --popover: 0 0% 10.2%;
     --popover-foreground: 0 0% 100%;
-    /* Primary actions: mint fill, dark green text */
-    --primary: 129 36% 78%; /* #b2dbb8 */
-    --primary-foreground: 131 61% 15%; /* #0f3e18 */
-    --secondary: 0 0% 13.3%; /* #222222 */
+
+    --primary: 129 36% 78%;              /* mint fills in dark */
+    --primary-foreground: 131 61% 15%;
+    --secondary: 0 0% 13.3%;
     --secondary-foreground: 0 0% 100%;
-    --muted: 0 0% 11.8%; /* #1e1e1e */
-    --muted-foreground: 0 0% 63%; /* #a0a0a0 */
-    --accent: 0 0% 11.8%; /* #1e1e1e — row hover / subtle surfaces */
+    --muted: 0 0% 11.8%;
+    --muted-foreground: 0 0% 63%;
+    --accent: 0 0% 11.8%;
     --accent-foreground: 0 0% 100%;
     --destructive: 0 63% 40%;
     --destructive-foreground: 0 0% 100%;
-    --border: 0 0% 16.5%; /* #2a2a2a */
-    --input: 0 0% 13.3%; /* #222222 */
+    --border: 0 0% 16.5%;
+    --input: 0 0% 13.3%;
     --ring: 0 0% 40%;
-    --sidebar-background: 0 0% 8.6%; /* #161616 */
-    --sidebar-foreground: 0 0% 88%; /* #e0e0e0 */
-    --sidebar-accent: 0 0% 13.3%; /* #222222 */
-    --sidebar-border: 0 0% 16.5%; /* #2a2a2a */
+
+    --sidebar-background: 0 0% 8.6%;
+    --sidebar-foreground: 0 0% 88%;
+    --sidebar-accent: 0 0% 13.3%;
+    --sidebar-border: 0 0% 16.5%;
+
+    --status-pass-bg: 131 40% 14%;
+    --status-pass-fg: 131 45% 78%;
+    --status-warn-bg: 36 45% 14%;
+    --status-warn-fg: 36 90% 70%;
+    --status-fail-bg: 1 45% 16%;
+    --status-fail-fg: 1 80% 75%;
   }
 }
 
@@ -67,5 +102,32 @@
   }
   body {
     @apply bg-background text-foreground antialiased;
+    font-feature-settings: "ss01", "cv11";
+  }
+  /* Metrics, dates, counts read better with tabular numerals. */
+  .tabular-nums,
+  [data-tabular] {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* Utility — soft elevated card used across dashboard */
+@layer utilities {
+  .shadow-card {
+    box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+  }
+  .shadow-card-hover {
+    box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04), 0 4px 14px rgba(16, 24, 40, 0.06);
+  }
+  .shadow-brand {
+    box-shadow: 0 1px 2px rgba(15, 62, 24, 0.2);
+  }
+  /* Sidebar keyboard-hint chip */
+  .kbd-chip {
+    @apply inline-flex h-5 items-center rounded border border-border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground;
+  }
+  /* Workspace-label eyebrow used in sidebar + section heads */
+  .eyebrow {
+    @apply text-[10.5px] font-semibold uppercase tracking-[0.08em] text-muted-foreground;
   }
 }

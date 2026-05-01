@@ -1,12 +1,17 @@
 "use client";
 
 import {
-  Home,
+  Bell,
+  Building2,
+  ClipboardList,
+  Download,
+  FileText,
+  Flag,
   LayoutDashboard,
-  List,
+  LifeBuoy,
   Menu,
+  TrendingUp,
   Users,
-  Users2,
   X,
 } from "lucide-react";
 import Link from "next/link";
@@ -18,46 +23,107 @@ import { Button } from "@/components/ui/button";
 import type { WorkspaceSidebarInfo } from "@/lib/queries/org";
 import { cn } from "@/lib/utils";
 
-const NAV = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/inspections", label: "Inspections", icon: Home },
-  { href: "/clients", label: "Clients", icon: Users2 },
-  { href: "/templates", label: "Templates", icon: List },
-  { href: "/team", label: "Team", icon: Users },
-] as const;
+type NavItem = {
+  href: string;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  badge?: string;
+  badgeTone?: "default" | "warn";
+};
 
-function NavLinks({
+const WORKSPACE_NAV: NavItem[] = [
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/inspections", label: "Inspections", icon: ClipboardList, badge: "12" },
+  { href: "/templates", label: "Templates", icon: FileText },
+  { href: "/clients", label: "Clients", icon: Building2 },
+  { href: "/team", label: "Team", icon: Users },
+];
+
+const REPORTS_NAV: NavItem[] = [
+  { href: "/notifications", label: "Notifications", icon: Bell, badge: "3", badgeTone: "warn" },
+  { href: "/reports/performance", label: "Performance", icon: TrendingUp },
+  { href: "/reports/issues", label: "Issues", icon: Flag, badge: "4", badgeTone: "warn" },
+  { href: "/reports/exports", label: "Exports", icon: Download },
+];
+
+function isActive(pathname: string, href: string) {
+  if (href === "/dashboard") {
+    return pathname === "/dashboard" || pathname === "/";
+  }
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
+
+function NavRow({
+  item,
   pathname,
   onNavigate,
 }: {
+  item: NavItem;
+  pathname: string;
+  onNavigate?: () => void;
+}) {
+  const Icon = item.icon;
+  const active = isActive(pathname, item.href);
+  return (
+    <Link
+      href={item.href}
+      onClick={onNavigate}
+      className={cn(
+        "group relative flex h-9 items-center gap-2.5 rounded-lg px-2.5 text-[13px] font-medium transition-colors",
+        active
+          ? "bg-secondary text-primary"
+          : "text-muted-foreground hover:bg-sidebar-accent hover:text-foreground"
+      )}
+    >
+      {active ? (
+        <span
+          aria-hidden
+          className="absolute left-0 top-1/2 h-4 w-0.5 -translate-y-1/2 rounded-full bg-primary"
+        />
+      ) : null}
+      <Icon
+        className={cn(
+          "h-[17px] w-[17px] shrink-0",
+          active ? "text-primary" : "text-muted-foreground group-hover:text-foreground"
+        )}
+      />
+      <span className="flex-1 truncate">{item.label}</span>
+      {item.badge ? (
+        <span
+          className={cn(
+            "inline-flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-[10.5px] font-semibold tabular-nums",
+            item.badgeTone === "warn"
+              ? "bg-[hsl(var(--status-warn-bg))] text-[hsl(var(--status-warn-fg))]"
+              : active
+                ? "bg-primary text-primary-foreground"
+                : "bg-muted text-muted-foreground"
+          )}
+        >
+          {item.badge}
+        </span>
+      ) : null}
+    </Link>
+  );
+}
+
+function NavSection({
+  label,
+  items,
+  pathname,
+  onNavigate,
+}: {
+  label: string;
+  items: NavItem[];
   pathname: string;
   onNavigate?: () => void;
 }) {
   return (
-    <nav className="flex flex-1 flex-col gap-1 px-3 py-4">
-      {NAV.map(({ href, label, icon: Icon }) => {
-        const active =
-          href === "/dashboard"
-            ? pathname === "/dashboard" || pathname === "/"
-            : pathname === href || pathname.startsWith(`${href}/`);
-        return (
-          <Link
-            key={href}
-            href={href}
-            onClick={onNavigate}
-            className={cn(
-              "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
-              active
-                ? "bg-primary text-primary-foreground"
-                : "text-sidebar-foreground/75 hover:bg-sidebar-accent hover:text-sidebar-foreground"
-            )}
-          >
-            <Icon className="h-5 w-5 shrink-0" />
-            {label}
-          </Link>
-        );
-      })}
-    </nav>
+    <div className="mt-4 flex flex-col gap-0.5">
+      <div className="px-2.5 pb-1.5 eyebrow">{label}</div>
+      {items.map((item) => (
+        <NavRow key={item.href} item={item} pathname={pathname} onNavigate={onNavigate} />
+      ))}
+    </div>
   );
 }
 
@@ -80,8 +146,8 @@ function SidebarChrome({
 }) {
   return (
     <>
-      <div className="flex h-14 shrink-0 items-center justify-between border-b border-sidebar-border bg-sidebar px-4">
-        <Logo href="/dashboard" height={26} />
+      <div className="flex h-16 shrink-0 items-center justify-between border-b border-sidebar-border px-5">
+        <Logo href="/dashboard" height={36} />
         {showClose ? (
           <Button
             type="button"
@@ -95,15 +161,40 @@ function SidebarChrome({
           </Button>
         ) : null}
       </div>
-      {workspace ? (
-        <WorkspaceSwitcher
-          workspace={workspace}
-          email={email}
-          userDisplayName={userDisplayName}
+      <div className="flex flex-1 flex-col overflow-y-auto px-3 pb-4 pt-3">
+        <NavSection
+          label="WORKSPACE"
+          items={WORKSPACE_NAV}
+          pathname={pathname}
           onNavigate={onNavigate}
         />
+        <NavSection
+          label="REPORTS"
+          items={REPORTS_NAV}
+          pathname={pathname}
+          onNavigate={onNavigate}
+        />
+        <div className="mt-auto pt-4">
+          <Link
+            href="/support"
+            onClick={onNavigate}
+            className="flex h-9 items-center gap-2.5 rounded-lg px-2.5 text-[13px] font-medium text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-foreground"
+          >
+            <LifeBuoy className="h-[17px] w-[17px]" />
+            Help & support
+          </Link>
+        </div>
+      </div>
+      {workspace ? (
+        <div className="border-t border-sidebar-border">
+          <WorkspaceSwitcher
+            workspace={workspace}
+            email={email}
+            userDisplayName={userDisplayName}
+            onNavigate={onNavigate}
+          />
+        </div>
       ) : null}
-      <NavLinks pathname={pathname} onNavigate={onNavigate} />
     </>
   );
 }
@@ -123,8 +214,8 @@ export function DashboardLayoutClient({
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <div className="min-h-dvh bg-muted/20">
-      <header className="sticky top-0 z-20 flex h-14 items-center gap-3 border-b border-border/80 bg-background/95 px-4 backdrop-blur md:hidden">
+    <div className="min-h-dvh bg-background">
+      <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-border bg-background/95 px-4 backdrop-blur md:hidden">
         <Button
           type="button"
           variant="ghost"
@@ -134,7 +225,7 @@ export function DashboardLayoutClient({
         >
           <Menu className="h-5 w-5" />
         </Button>
-        <Logo href="/dashboard" height={24} />
+        <Logo href="/dashboard" height={30} />
       </header>
 
       {mobileOpen ? (
@@ -145,7 +236,7 @@ export function DashboardLayoutClient({
             aria-label="Close menu"
             onClick={() => setMobileOpen(false)}
           />
-          <aside className="fixed inset-y-0 left-0 z-50 flex w-64 max-w-[85vw] flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground shadow-xl md:hidden">
+          <aside className="fixed inset-y-0 left-0 z-50 flex w-72 max-w-[85vw] flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground shadow-xl md:hidden">
             <SidebarChrome
               email={email}
               workspace={workspace}
@@ -159,7 +250,7 @@ export function DashboardLayoutClient({
         </>
       ) : null}
 
-      <aside className="fixed left-0 top-0 z-30 hidden h-dvh w-64 border-r border-sidebar-border bg-sidebar text-sidebar-foreground md:flex md:flex-col">
+      <aside className="fixed left-0 top-0 z-30 hidden h-dvh w-64 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground md:flex">
         <SidebarChrome
           email={email}
           workspace={workspace}
@@ -169,7 +260,7 @@ export function DashboardLayoutClient({
       </aside>
 
       <main className="min-h-[calc(100dvh-3.5rem)] md:min-h-dvh md:pl-64">
-        <div className="mx-auto max-w-5xl px-4 py-8 md:px-6 md:py-10">
+        <div className="mx-auto max-w-[1680px] px-6 py-6 md:px-10 md:py-10">
           {children}
         </div>
       </main>
