@@ -6,12 +6,7 @@ import type {
   FilterOption,
   PeriodKey,
 } from "@/lib/dashboard-filters";
-import {
-  formatAmsterdamMonthYearLong,
-  formatChartDayOfMonth,
-  getAmsterdamMonthStartYmd,
-  getAmsterdamYmd,
-} from "@/lib/utils/date";
+import { formatChartDayOfMonth, getAmsterdamYmd } from "@/lib/utils/date";
 import type { InspectionStatus } from "@/types/database";
 
 export type InspectionsChartPoint = {
@@ -75,10 +70,10 @@ function diffDaysInclusive(startYmd: string, endYmd: string): number {
   return Math.floor((end - start) / 86_400_000) + 1;
 }
 
-function titleForPeriod(period: PeriodKey, reference: Date): string {
+function titleForPeriod(period: PeriodKey, _reference: Date): string {
   if (period === "week") return "Last 7 days";
-  if (period === "year") return "Last 12 months";
-  return formatAmsterdamMonthYearLong(reference);
+  if (period === "month") return "Last 30 days";
+  return "Last 12 months";
 }
 
 function getPeriodBounds(period: PeriodKey, reference: Date) {
@@ -87,14 +82,12 @@ function getPeriodBounds(period: PeriodKey, reference: Date) {
     const start = addDaysYmd(end, -6);
     return { start, end };
   }
-  if (period === "year") {
-    const start = addDaysYmd(end, -364);
+  if (period === "month") {
+    const start = addDaysYmd(end, -29);
     return { start, end };
   }
-  return {
-    start: getAmsterdamMonthStartYmd(reference),
-    end,
-  };
+  const start = addDaysYmd(end, -364);
+  return { start, end };
 }
 
 function monthKeyFromYmd(ymd: string): string {

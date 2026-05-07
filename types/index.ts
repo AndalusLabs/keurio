@@ -41,7 +41,7 @@ export type InspectionDetail = InspectionRow & {
   checklist_templates: (ChecklistTemplateRow & {
     checklist_items: ChecklistItemRow[];
   }) | null;
-  clients?: Pick<ClientRow, "id" | "company_name" | "city"> | null;
+  clients?: Pick<ClientRow, "id" | "company_name" | "city" | "email"> | null;
   inspection_results: (InspectionResultRow & {
     checklist_items: Pick<ChecklistItemRow, "id" | "label" | "sort_order">;
     photos: PhotoRow[];

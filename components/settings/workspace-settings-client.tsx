@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader2, Upload } from "lucide-react";
+import { Loader2, PenLine, Upload } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -18,12 +18,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import {
-  saveCompanyProfile,
-  saveUserProfile,
-  uploadCompanyLogo,
-  uploadSignature,
-} from "@/lib/actions/settings";
+import { saveCompanyProfile, saveUserProfile, uploadCompanyLogo } from "@/lib/actions/settings";
+import { WorkspaceSignaturePadDialog } from "@/components/settings/workspace-signature-pad-dialog";
 import { profileAssetPublicUrl } from "@/lib/utils/storage";
 import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
 import { toast } from "@/hooks/use-toast";
@@ -92,10 +88,9 @@ export function WorkspaceSettingsClient({
 }: Props) {
   const router = useRouter();
   const logoInputRef = useRef<HTMLInputElement>(null);
-  const sigInputRef = useRef<HTMLInputElement>(null);
   const [saving, setSaving] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
-  const [uploadingSig, setUploadingSig] = useState(false);
+  const [signatureDialogOpen, setSignatureDialogOpen] = useState(false);
 
   const [logoPath, setLogoPath] = useState(
     initialCompany?.logo_storage_path ?? null
@@ -207,28 +202,6 @@ export function WorkspaceSettingsClient({
     }
     if (res.path) setLogoPath(res.path);
     toast({ title: "Logo updated" });
-    router.refresh();
-  }
-
-  async function onSigFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    e.target.value = "";
-    if (!file) return;
-    setUploadingSig(true);
-    const fd = new FormData();
-    fd.set("file", file);
-    const res = await uploadSignature(fd);
-    setUploadingSig(false);
-    if (res.error) {
-      toast({
-        title: "Upload failed",
-        description: res.error,
-        variant: "destructive",
-      });
-      return;
-    }
-    if (res.path) setSigPath(res.path);
-    toast({ title: "Signature updated" });
     router.refresh();
   }
 
@@ -361,43 +334,43 @@ export function WorkspaceSettingsClient({
             </div>
             <div className="space-y-2">
               <Label>Signature</Label>
-              <div className="flex flex-wrap items-end gap-4">
-                <div className="relative h-24 w-48 overflow-hidden rounded-lg border bg-muted">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+                <div className="relative h-28 w-full max-w-md overflow-hidden rounded-lg border border-border bg-muted">
                   {sigUrl ? (
                     <Image
                       src={sigUrl}
-                      alt="Signature"
+                      alt="Your saved signature"
                       fill
-                      className="object-contain p-1"
-                      sizes="192px"
+                      className="object-contain p-2"
+                      sizes="(max-width: 768px) 100vw, 448px"
                     />
                   ) : (
-                    <div className="flex h-full items-center justify-center text-xs text-muted-foreground">
-                      No signature
+                    <div className="flex h-full items-center justify-center px-4 text-center text-sm text-muted-foreground">
+                      No signature yet — add one to use on PDFs and sign-offs.
                     </div>
                   )}
                 </div>
-                <input
-                  ref={sigInputRef}
-                  type="file"
-                  accept="image/png,image/jpeg,image/gif,image/webp"
-                  className="hidden"
-                  onChange={(ev) => void onSigFile(ev)}
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  disabled={uploadingSig}
-                  onClick={() => sigInputRef.current?.click()}
-                >
-                  {uploadingSig ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                <div className="flex w-full flex-col gap-2 sm:w-auto sm:min-w-[11rem]">
+                  {!sigPath ? (
+                    <Button
+                      type="button"
+                      className="min-h-12 gap-2 bg-[#0f3e18] py-3 text-white hover:bg-[#0d3414]"
+                      onClick={() => setSignatureDialogOpen(true)}
+                    >
+                      <PenLine className="h-4 w-4" />
+                      Add signature
+                    </Button>
                   ) : (
-                    <Upload className="h-4 w-4" />
+                    <Button
+                      type="button"
+                      variant="link"
+                      className="min-h-12 h-auto py-3 text-base font-semibold text-[#0f3e18] underline-offset-4 hover:text-[#0f3e18] hover:no-underline"
+                      onClick={() => setSignatureDialogOpen(true)}
+                    >
+                      Re-sign
+                    </Button>
                   )}
-                  Upload
-                </Button>
+                </div>
               </div>
             </div>
           </CardContent>
@@ -418,6 +391,15 @@ export function WorkspaceSettingsClient({
           </Button>
         </div>
       </form>
+
+      <WorkspaceSignaturePadDialog
+        open={signatureDialogOpen}
+        onOpenChange={setSignatureDialogOpen}
+        onSuccess={(path) => {
+          setSigPath(path);
+          router.refresh();
+        }}
+      />
     </div>
   );
 }

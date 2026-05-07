@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { safePostAuthPath } from "@/lib/utils/auth-redirect";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,18 +9,21 @@ import { Label } from "@/components/ui/label";
 type SignupPageProps = {
   searchParams?: Promise<{
     error?: string;
+    next?: string;
   }>;
 };
 
 export default async function SignupPage({ searchParams }: SignupPageProps) {
   const params = (await searchParams) ?? {};
   const error = params.error ? decodeURIComponent(params.error) : null;
+  const next = safePostAuthPath(params.next);
 
   async function signup(formData: FormData) {
     "use server";
 
     const email = String(formData.get("email") ?? "").trim();
     const password = String(formData.get("password") ?? "");
+    const nextParam = safePostAuthPath(String(formData.get("next") ?? ""));
 
     if (!email || !password) {
       redirect("/signup?error=Please%20fill%20in%20email%20and%20password.");
@@ -38,6 +42,9 @@ export default async function SignupPage({ searchParams }: SignupPageProps) {
       redirect("/signup?error=Could%20not%20create%20account.");
     }
 
+    if (nextParam) {
+      redirect(`/login?next=${encodeURIComponent(nextParam)}`);
+    }
     redirect("/login");
   }
 
@@ -56,6 +63,7 @@ export default async function SignupPage({ searchParams }: SignupPageProps) {
         ) : null}
 
         <form action={signup} className="mt-6 space-y-4">
+          <input type="hidden" name="next" value={next ?? ""} />
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <Input id="email" name="email" type="email" autoComplete="email" required />
@@ -78,7 +86,10 @@ export default async function SignupPage({ searchParams }: SignupPageProps) {
 
         <p className="mt-4 text-sm text-slate-600">
           Already have an account?{" "}
-          <Link href="/login" className="font-medium text-[#0f3e18] hover:underline">
+          <Link
+            href={next ? `/login?next=${encodeURIComponent(next)}` : "/login"}
+            className="font-medium text-[#0f3e18] hover:underline"
+          >
             Sign in
           </Link>
         </p>

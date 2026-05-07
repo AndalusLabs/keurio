@@ -63,7 +63,7 @@ export async function getInspectionDetail(
         *,
         checklist_items ( * )
       ),
-      clients ( id, company_name, city ),
+      clients ( id, company_name, city, email ),
       inspection_results (
         *,
         checklist_items ( id, label, sort_order ),

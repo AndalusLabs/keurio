@@ -1,12 +1,15 @@
 import { ArrowLeft, Download } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { InspectionSignoffCard } from "@/components/inspection/inspection-signoff-card";
 import { PageHeader } from "@/components/shared/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { sendInspection, signInspection } from "@/lib/actions/inspections";
 import { getInspectionDetail } from "@/lib/queries/inspections";
+import { getWorkspaceSignature } from "@/lib/queries/workspace";
 import { formatInspectionDateTime } from "@/lib/utils/date";
 import type { ResultStatus } from "@/types/database";
 
@@ -31,8 +34,16 @@ export default async function InspectionDetailPage({
       (a.checklist_items?.sort_order ?? 0) - (b.checklist_items?.sort_order ?? 0)
   );
 
+  const workspaceSignature = await getWorkspaceSignature();
+  const signoff = {
+    signedAt: data.signed_at ?? null,
+    sentAt: data.sent_at ?? null,
+    sentToEmail: data.sent_to_email ?? null,
+  };
+  const clientEmail = data.clients?.email ?? null;
+
   return (
-    <div className="mx-auto max-w-2xl space-y-10">
+    <div className="mx-auto max-w-2xl space-y-8">
       <PageHeader
         title={data.title}
         description={`${templateName}${data.site_name ? ` · ${data.site_name}` : ""}`}
@@ -69,6 +80,23 @@ export default async function InspectionDetailPage({
           ) : null}
         </CardContent>
       </Card>
+
+      {data.status === "completed" ? (
+        <InspectionSignoffCard
+          inspectionId={data.id}
+          signature={workspaceSignature}
+          defaultRecipientEmail={clientEmail}
+          initial={signoff}
+          onSign={async () => {
+            "use server";
+            return signInspection(data.id);
+          }}
+          onSend={async (recipientEmail: string) => {
+            "use server";
+            return sendInspection(data.id, recipientEmail);
+          }}
+        />
+      ) : null}
 
       <div className="space-y-3">
         <h2 className="text-sm font-semibold text-primary">Checklist results</h2>

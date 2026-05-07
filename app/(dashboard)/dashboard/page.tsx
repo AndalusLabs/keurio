@@ -4,10 +4,6 @@ import {
 } from "@/components/dashboard/dashboard-filter-bar";
 import { InspectionsMetricsDashboard } from "@/components/dashboard/inspections-metrics-dashboard";
 import { QuickActionsCard } from "@/components/dashboard/quick-actions-card";
-import {
-  TodaysPriorities,
-  type Priority,
-} from "@/components/dashboard/todays-priorities";
 import { Button } from "@/components/ui/button";
 import {
   getClientOptions,
@@ -39,37 +35,6 @@ function formatDayMonth(d: Date): string {
     timeZone: "Europe/Amsterdam",
   }).format(d);
 }
-
-/**
- * Sample priorities — pulled from scheduled/overdue inspections once the
- * back-end query lands. Keeping the shape here so the UI renders immediately.
- */
-const SAMPLE_PRIORITIES: Priority[] = [
-  {
-    id: "p1",
-    title: "Cold Storage — Bakker & Zoon",
-    subtitle: "Failed check · awaiting re-inspection",
-    due: "Due today",
-    tone: "danger",
-    href: "/inspections",
-  },
-  {
-    id: "p2",
-    title: "Fire Safety Audit — Meridian",
-    subtitle: "68% complete · 4 photos pending",
-    due: "2h left",
-    tone: "warn",
-    href: "/inspections",
-  },
-  {
-    id: "p3",
-    title: "Quarterly HVAC — Westfield",
-    subtitle: "Scheduled with Jonas",
-    due: "3:30 PM",
-    tone: "info",
-    href: "/inspections",
-  },
-];
 
 type DashboardHomePageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
@@ -122,14 +87,13 @@ export default async function DashboardHomePage({
         clients={clients}
       />
 
-      {/* KPIs + chart, with QuickActions + Priorities stacked to the right */}
+      {/* KPIs + chart with quick actions aside */}
       <div className="grid gap-6 xl:grid-cols-[1fr_320px]">
         <div className="space-y-6">
           {metrics ? <InspectionsMetricsDashboard metrics={metrics} /> : null}
         </div>
         <aside className="space-y-6 xl:sticky xl:top-6 xl:self-start">
           <QuickActionsCard />
-          <TodaysPriorities items={SAMPLE_PRIORITIES} />
         </aside>
       </div>
     </div>

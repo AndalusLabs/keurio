@@ -15,9 +15,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 const PERIODS: { id: PeriodKey; label: string }[] = [
-  { id: "week", label: "Last week" },
-  { id: "month", label: "Last month" },
-  { id: "year", label: "Last year" },
+  { id: "week", label: "Last 7 days" },
+  { id: "month", label: "Last 30 days" },
+  { id: "year", label: "Last 12 months" },
 ];
 
 type Props = {

@@ -1,16 +1,12 @@
 "use client";
 
 import {
-  Bell,
   Building2,
   ClipboardList,
-  Download,
   FileText,
-  Flag,
   LayoutDashboard,
   LifeBuoy,
   Menu,
-  TrendingUp,
   Users,
   X,
 } from "lucide-react";
@@ -33,17 +29,10 @@ type NavItem = {
 
 const WORKSPACE_NAV: NavItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/inspections", label: "Inspections", icon: ClipboardList, badge: "12" },
+  { href: "/inspections", label: "Inspections", icon: ClipboardList },
   { href: "/templates", label: "Templates", icon: FileText },
   { href: "/clients", label: "Clients", icon: Building2 },
   { href: "/team", label: "Team", icon: Users },
-];
-
-const REPORTS_NAV: NavItem[] = [
-  { href: "/notifications", label: "Notifications", icon: Bell, badge: "3", badgeTone: "warn" },
-  { href: "/reports/performance", label: "Performance", icon: TrendingUp },
-  { href: "/reports/issues", label: "Issues", icon: Flag, badge: "4", badgeTone: "warn" },
-  { href: "/reports/exports", label: "Exports", icon: Download },
 ];
 
 function isActive(pathname: string, href: string) {
@@ -165,12 +154,6 @@ function SidebarChrome({
         <NavSection
           label="WORKSPACE"
           items={WORKSPACE_NAV}
-          pathname={pathname}
-          onNavigate={onNavigate}
-        />
-        <NavSection
-          label="REPORTS"
-          items={REPORTS_NAV}
           pathname={pathname}
           onNavigate={onNavigate}
         />

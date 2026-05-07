@@ -3,7 +3,11 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getOrgContext } from "@/lib/queries/org";
+import { getWorkspaceSignature } from "@/lib/queries/workspace";
+import { renderInspectionPdfBuffer } from "@/lib/pdf/inspection-report";
+import { getResend, getResendFrom } from "@/lib/email/resend";
 import type { ResultStatus } from "@/types/database";
+import type { InspectionDetail } from "@/types";
 
 export async function createInspection(formData: {
   title: string;
@@ -158,6 +162,172 @@ export async function completeInspection(inspectionId: string) {
   revalidatePath(`/inspections/${inspectionId}`);
   revalidatePath("/run");
   return { ok: true };
+}
+
+function isValidEmail(email: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+async function getInspectionForWorkflow(inspectionId: string) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Unauthorized" as const };
+  const ctx = await getOrgContext();
+  if (!ctx) return { error: "Unauthorized" as const };
+
+  const query = supabase
+    .from("inspections")
+    .select(`
+      *,
+      checklist_templates ( id, name ),
+      clients ( id, company_name, city, email ),
+      inspection_results (
+        *,
+        checklist_items ( id, label, sort_order ),
+        photos ( * )
+      )
+    `)
+    .eq("id", inspectionId)
+    .eq("organization_id", ctx.organizationId);
+
+  if (ctx.role === "technician") {
+    query.eq("user_id", user.id);
+  }
+
+  const { data, error } = await query.single();
+  if (error || !data) return { error: "Inspection not found" as const };
+  return { supabase, user, inspection: data };
+}
+
+export async function signInspection(id: string): Promise<
+  { ok: true; signedAt: string } | { ok: false; error: string }
+> {
+  const loaded = await getInspectionForWorkflow(id);
+  if ("error" in loaded) return { ok: false, error: loaded.error ?? "Unauthorized" };
+
+  const signature = await getWorkspaceSignature();
+  if (!signature?.imageUrl) {
+    return {
+      ok: false,
+      error: "No workspace signature found. Add one in Settings > Workspace.",
+    };
+  }
+
+  const signedAt = new Date().toISOString();
+  const { error } = await loaded.supabase
+    .from("inspections")
+    .update({ signed_at: signedAt })
+    .eq("id", id)
+    .eq("organization_id", loaded.inspection.organization_id);
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath(`/inspections/${id}`);
+  revalidatePath("/inspections");
+  return { ok: true, signedAt };
+}
+
+export async function sendInspection(
+  id: string,
+  recipientEmail: string
+): Promise<{ ok: true; sentAt: string } | { ok: false; error: string }> {
+  const email = recipientEmail.trim().toLowerCase();
+  if (!isValidEmail(email)) return { ok: false, error: "Please enter a valid email address." };
+
+  const loaded = await getInspectionForWorkflow(id);
+  if ("error" in loaded) return { ok: false, error: loaded.error ?? "Unauthorized" };
+  const inspection = loaded.inspection;
+
+  if (inspection.status !== "completed") {
+    return { ok: false, error: "Inspection must be completed before sending." };
+  }
+  if (!inspection.signed_at) {
+    return { ok: false, error: "Inspection must be signed before sending." };
+  }
+
+  const signature = await getWorkspaceSignature();
+  if (!signature?.imageUrl) {
+    return {
+      ok: false,
+      error: "No workspace signature found. Add one in Settings > Workspace.",
+    };
+  }
+
+  const pdfBuffer = await renderInspectionPdfBuffer({
+    inspection: inspection as InspectionDetail,
+    signature,
+  });
+  const path = `${loaded.user.id}/${id}/report-${Date.now()}.pdf`;
+  const { error: uploadError } = await loaded.supabase.storage
+    .from("inspection-reports")
+    .upload(path, pdfBuffer, {
+      contentType: "application/pdf",
+      upsert: false,
+    });
+  if (uploadError) return { ok: false, error: uploadError.message };
+
+  const expiresIn = 60 * 60 * 24 * 30;
+  const { data: signed, error: signedError } = await loaded.supabase.storage
+    .from("inspection-reports")
+    .createSignedUrl(path, expiresIn);
+  if (signedError || !signed?.signedUrl) {
+    return { ok: false, error: signedError?.message ?? "Could not create report link." };
+  }
+
+  const appUrl =
+    process.env.NEXT_PUBLIC_APP_URL ||
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    "http://localhost:3000";
+  const inspectionUrl = `${appUrl}/inspections/${id}`;
+  const completedDate = inspection.completed_at
+    ? new Date(inspection.completed_at).toLocaleDateString("nl-NL")
+    : "—";
+  const clientName = inspection.clients?.company_name ?? "Client";
+
+  try {
+    const resend = getResend();
+    await resend.emails.send({
+      from: getResendFrom(),
+      to: email,
+      subject: `Inspection report: ${inspection.title}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; color: #0f172a; line-height: 1.5;">
+          <h2 style="margin: 0 0 12px;">${inspection.title}</h2>
+          <p style="margin: 0 0 8px;"><strong>Client:</strong> ${clientName}</p>
+          <p style="margin: 0 0 16px;"><strong>Completed:</strong> ${completedDate}</p>
+          <p style="margin: 0 0 16px;">
+            Your PDF report is ready. The secure link stays valid for 30 days.
+          </p>
+          <p style="margin: 0 0 12px;">
+            <a href="${signed.signedUrl}" style="background: #0f3e18; color: #fff; padding: 10px 14px; text-decoration: none; border-radius: 6px; display: inline-block;">
+              Open PDF report
+            </a>
+          </p>
+          <p style="margin: 0; color: #475569; font-size: 13px;">
+            Inspection detail: <a href="${inspectionUrl}">${inspectionUrl}</a>
+          </p>
+        </div>
+      `,
+    });
+  } catch (error) {
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : "Failed to send email.",
+    };
+  }
+
+  const sentAt = new Date().toISOString();
+  const { error: updateError } = await loaded.supabase
+    .from("inspections")
+    .update({ sent_at: sentAt, sent_to_email: email })
+    .eq("id", id)
+    .eq("organization_id", inspection.organization_id);
+  if (updateError) return { ok: false, error: updateError.message };
+
+  revalidatePath(`/inspections/${id}`);
+  revalidatePath("/inspections");
+  return { ok: true, sentAt };
 }
 
 export async function deleteInspection(inspectionId: string) {

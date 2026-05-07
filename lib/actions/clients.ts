@@ -69,7 +69,7 @@ export async function upsertClient(input: ClientFormInput, id?: string) {
 export async function deleteClient(id: string) {
   const supabase = await createClient();
   const ctx = await getOrgContext();
-  if (!ctx) return { error: "Unauthorized" };
+  if (!ctx || ctx.role !== "admin") return { error: "Forbidden" };
 
   const { error } = await supabase
     .from("clients")
@@ -93,7 +93,7 @@ export async function deleteClients(clientIds: string[]) {
 
   const supabase = await createClient();
   const ctx = await getOrgContext();
-  if (!ctx) return { error: "Unauthorized" };
+  if (!ctx || ctx.role !== "admin") return { error: "Forbidden" };
 
   const { error } = await supabase
     .from("clients")

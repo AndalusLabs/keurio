@@ -155,6 +155,9 @@ export type Database = {
           status: InspectionStatus;
           created_at: string;
           completed_at: string | null;
+          signed_at: string | null;
+          sent_at: string | null;
+          sent_to_email: string | null;
         };
         Insert: {
           id?: string;
@@ -168,6 +171,9 @@ export type Database = {
           status?: InspectionStatus;
           created_at?: string;
           completed_at?: string | null;
+          signed_at?: string | null;
+          sent_at?: string | null;
+          sent_to_email?: string | null;
         };
         Update: {
           id?: string;
@@ -181,6 +187,9 @@ export type Database = {
           status?: InspectionStatus;
           created_at?: string;
           completed_at?: string | null;
+          signed_at?: string | null;
+          sent_at?: string | null;
+          sent_to_email?: string | null;
         };
         Relationships: DbRelationship[];
       };
@@ -406,9 +415,21 @@ export type Database = {
     };
     Views: Record<string, never>;
     Functions: {
+      accept_org_invite: {
+        Args: { invite_token: string };
+        Returns: string;
+      };
       ensure_org_default_templates: {
         Args: { p_org_id: string };
         Returns: undefined;
+      };
+      peek_org_invite: {
+        Args: { p_token: string };
+        Returns: {
+          email: string;
+          accepted_at: string | null;
+          organization_name: string;
+        }[];
       };
     };
   };

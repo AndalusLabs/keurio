@@ -56,7 +56,7 @@ export function InspectionsMetricsDashboard({ metrics }: Props) {
           label="Completed"
           value={metrics.completedCount.toLocaleString("nl-NL")}
           trend="up"
-          subtitle="this month"
+          subtitle="All time"
           spark={chartSpark}
         />
       </div>
