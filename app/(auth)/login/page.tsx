@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { safePostAuthPath } from "@/lib/utils/auth-redirect";
@@ -25,6 +26,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
     const email = String(formData.get("email") ?? "").trim();
     const password = String(formData.get("password") ?? "");
     const nextParam = safePostAuthPath(String(formData.get("next") ?? ""));
+    const remember = formData.get("remember") === "on";
 
     if (!email || !password) {
       redirect("/login?error=Please%20fill%20in%20email%20and%20password.");
@@ -38,6 +40,24 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
 
     if (signInError) {
       redirect("/login?error=Invalid%20email%20or%20password.");
+    }
+
+    const cookieStore = await cookies();
+    const baseCookie = {
+      path: "/",
+      sameSite: "lax" as const,
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+    };
+    if (remember) {
+      cookieStore.set("keurio_remember", "1", {
+        ...baseCookie,
+        maxAge: 60 * 60 * 24 * 30,
+      });
+      cookieStore.delete("keurio_session");
+    } else {
+      cookieStore.set("keurio_session", "1", baseCookie);
+      cookieStore.delete("keurio_remember");
     }
 
     redirect(nextParam ?? "/dashboard");
@@ -76,6 +96,15 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
               required
             />
           </div>
+          <label className="flex items-center gap-2 text-sm text-slate-700">
+            <input
+              id="remember"
+              name="remember"
+              type="checkbox"
+              className="h-4 w-4 rounded border-slate-300 text-[#0f3e18] focus:ring-[#0f3e18]"
+            />
+            Remember me
+          </label>
           <Button type="submit" className="w-full">
             Sign in
           </Button>

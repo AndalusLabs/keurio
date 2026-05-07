@@ -45,7 +45,7 @@ export default async function SignupPage({ searchParams }: SignupPageProps) {
     if (nextParam) {
       redirect(`/login?next=${encodeURIComponent(nextParam)}`);
     }
-    redirect("/login");
+    redirect("/onboarding");
   }
 
   return (

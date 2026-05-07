@@ -32,6 +32,8 @@ export async function updateSession(request: NextRequest) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
+  const remember = request.cookies.get("keurio_remember")?.value === "1";
+  const sessionOnly = request.cookies.get("keurio_session")?.value === "1";
 
   const isLoginRoute = request.nextUrl.pathname.startsWith("/login");
   const isSignupRoute = request.nextUrl.pathname.startsWith("/signup");
@@ -45,6 +47,15 @@ export async function updateSession(request: NextRequest) {
   if (!user && !isAuthRoute && !isPublicAsset && !isInviteRoute) {
     const next = request.nextUrl.clone();
     next.pathname = "/login";
+    return NextResponse.redirect(next);
+  }
+
+  // Session-only login: if browser session marker is gone, expire Supabase auth too.
+  if (user && !remember && !sessionOnly) {
+    await supabase.auth.signOut();
+    const next = request.nextUrl.clone();
+    next.pathname = "/login";
+    next.search = "";
     return NextResponse.redirect(next);
   }
 
