@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { Loader2 } from "lucide-react";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { forwardRef, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -16,9 +16,11 @@ import { uploadSignature } from "@/lib/actions/settings";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
-const SignatureCanvas = dynamic(() => import("react-signature-canvas"), {
-  ssr: false,
-}) as any;
+const SignatureCanvas = dynamic(async () => {
+  const mod = await import("react-signature-canvas");
+  const Base = mod.default;
+  return forwardRef<any, any>((props, ref) => <Base ref={ref} {...props} />);
+}, { ssr: false }) as any;
 
 const CANVAS_H = 192;
 
@@ -61,6 +63,14 @@ export function WorkspaceSignaturePadDialog({ open, onOpenChange, onSuccess }: P
   async function handleSave() {
     const pad = sigRef.current;
     if (!pad) return;
+    if (typeof pad.getTrimmedCanvas !== "function") {
+      toast({
+        title: "Could not save",
+        description: "Signature pad is not ready yet. Please try again.",
+        variant: "destructive",
+      });
+      return;
+    }
     if (pad.isEmpty()) {
       toast({
         title: "Nothing to save",
