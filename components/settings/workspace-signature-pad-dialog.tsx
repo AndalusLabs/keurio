@@ -72,12 +72,9 @@ export function WorkspaceSignaturePadDialog({ open, onOpenChange, onSuccess }: P
     setSaving(true);
     try {
       const canvas = pad.getTrimmedCanvas();
-      const blob = await new Promise<Blob>((resolve, reject) => {
-        canvas.toBlob((value: Blob | null) => {
-          if (value) resolve(value);
-          else reject(new Error("Could not serialize signature image."));
-        }, "image/png");
-      });
+      const dataUrl = canvas.toDataURL("image/png");
+      const response = await fetch(dataUrl);
+      const blob = await response.blob();
       const file = new File([blob], "signature.png", { type: "image/png" });
       const fd = new FormData();
       fd.set("file", file);
