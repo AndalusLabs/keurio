@@ -29,25 +29,38 @@ const chartConfig = {
 type Props = {
   data: ExtendedPoint[];
   monthLabel: string;
-  /**
-   * Optional summary — rendered in the chart footer.
-   * Omit any key to hide that stat.
-   */
-  summary?: {
-    total?: string;
-    totalDelta?: string;
-    avgPerDay?: string;
-    bestDay?: string;
-    avgCompletion?: string;
-  };
 };
 
 /**
  * Inspection activity chart — paired bars: current period (brand green) vs
- * previous period (pale slate). Summary footer surfaces headline stats so the
- * chart works as a standalone card.
+ * previous period (pale slate).
  */
-export function InspectionsActivityChart({ data, monthLabel, summary }: Props) {
+function isMonthlySeries(data: ExtendedPoint[]): boolean {
+  if (data.length < 10) return false;
+  return data.every((point) => point.date.endsWith("-01"));
+}
+
+function formatAxisDate(ymd: string, monthly: boolean): string {
+  const date = new Date(`${ymd}T00:00:00Z`);
+  if (monthly) {
+    return new Intl.DateTimeFormat("en-GB", {
+      month: "short",
+      timeZone: "Europe/Amsterdam",
+    }).format(date);
+  }
+  const day = new Intl.DateTimeFormat("en-GB", {
+    day: "numeric",
+    timeZone: "Europe/Amsterdam",
+  }).format(date);
+  const month = new Intl.DateTimeFormat("en-GB", {
+    month: "short",
+    timeZone: "Europe/Amsterdam",
+  }).format(date);
+  return `${day} ${month}`;
+}
+
+export function InspectionsActivityChart({ data, monthLabel }: Props) {
+  const monthly = isMonthlySeries(data);
   return (
     <Card className="overflow-hidden">
       <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0 pb-2">
@@ -80,13 +93,17 @@ export function InspectionsActivityChart({ data, monthLabel, summary }: Props) {
               strokeOpacity={0.7}
             />
             <XAxis
-              dataKey="label"
+              dataKey="date"
               tickLine={false}
               axisLine={false}
-              tickMargin={8}
-              interval="preserveStartEnd"
-              minTickGap={16}
+              tickMargin={monthly ? 8 : 14}
+              interval={0}
+              minTickGap={0}
               tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
+              tickFormatter={(value) => formatAxisDate(String(value), monthly)}
+              angle={monthly ? 0 : -32}
+              textAnchor={monthly ? "middle" : "end"}
+              height={monthly ? 30 : 56}
             />
             <YAxis
               tickLine={false}
@@ -120,29 +137,6 @@ export function InspectionsActivityChart({ data, monthLabel, summary }: Props) {
           </BarChart>
         </ChartContainer>
 
-        {summary ? (
-          <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 border-t border-border pt-4 sm:grid-cols-4">
-            {summary.total ? (
-              <SummaryStat
-                label="Total this period"
-                value={summary.total}
-                delta={summary.totalDelta}
-              />
-            ) : null}
-            {summary.avgPerDay ? (
-              <SummaryStat label="Avg. per day" value={summary.avgPerDay} />
-            ) : null}
-            {summary.bestDay ? (
-              <SummaryStat label="Best day" value={summary.bestDay} />
-            ) : null}
-            {summary.avgCompletion ? (
-              <SummaryStat
-                label="Avg. completion time"
-                value={summary.avgCompletion}
-              />
-            ) : null}
-          </div>
-        ) : null}
       </CardContent>
     </Card>
   );
@@ -167,28 +161,3 @@ function Legend({
   );
 }
 
-function SummaryStat({
-  label,
-  value,
-  delta,
-}: {
-  label: string;
-  value: string;
-  delta?: string;
-}) {
-  return (
-    <div>
-      <div className="text-[10.5px] font-medium uppercase tracking-[0.06em] text-muted-foreground">
-        {label}
-      </div>
-      <div className="mt-1 text-[15px] font-semibold tabular-nums text-foreground">
-        {value}
-        {delta ? (
-          <span className="ml-1.5 text-[11.5px] font-medium text-emerald-700">
-            {delta}
-          </span>
-        ) : null}
-      </div>
-    </div>
-  );
-}

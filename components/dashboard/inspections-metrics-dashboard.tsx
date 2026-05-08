@@ -64,18 +64,6 @@ export function InspectionsMetricsDashboard({ metrics }: Props) {
       <InspectionsActivityChart
         data={metrics.chartData}
         monthLabel={monthTitle}
-        summary={{
-          total: metrics.chartSummary.total.toLocaleString("nl-NL"),
-          totalDelta:
-            metrics.chartSummary.previousTotal > 0
-              ? `vs ${metrics.chartSummary.previousTotal.toLocaleString("nl-NL")} prev.`
-              : undefined,
-          avgPerDay: metrics.chartSummary.avgPerDay.toString(),
-          bestDay: metrics.chartSummary.bestDay
-            ? `${metrics.chartSummary.bestDay.label} · ${metrics.chartSummary.bestDay.count}`
-            : "—",
-          avgCompletion: "22m 14s",
-        }}
       />
     </div>
   );

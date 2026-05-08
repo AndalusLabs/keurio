@@ -58,9 +58,16 @@ export function InspectionRunItemRow({
       )}
     >
       {/* Collapsed row */}
-      <button
-        type="button"
+      <div
+        role="button"
+        tabIndex={0}
         onClick={onToggleExpand}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onToggleExpand();
+          }
+        }}
         className="flex w-full items-center gap-3 px-3 py-2.5 text-left hover:bg-muted/40"
       >
         {/* Index — always visible; pass/fail is shown only on the action buttons */}
@@ -105,7 +112,7 @@ export function InspectionRunItemRow({
             )}
           />
         </div>
-      </button>
+      </div>
 
       {/* Expanded note + photos */}
       {expanded ? (

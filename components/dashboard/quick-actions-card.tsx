@@ -17,18 +17,18 @@ export function QuickActionsCard({ className }: { className?: string }) {
   return (
     <div
       className={cn(
-        "flex flex-col rounded-xl bg-gradient-to-br from-[#0f3e18] to-[#0b2e12] p-5 text-white shadow-card",
+        "flex flex-col rounded-xl bg-gradient-to-br from-[#0f3e18] to-[#0b2e12] p-4 text-white shadow-card",
         className
       )}
     >
       <div className="eyebrow !text-[#b2dbb8]">QUICK ACTIONS</div>
-      <div className="mt-1.5 text-[17px] font-semibold tracking-[-0.01em]">
+      <div className="mt-1 text-[16px] font-semibold tracking-[-0.01em]">
         Start something
       </div>
 
       <Link
         href="/inspections/new"
-        className="group mt-4 flex items-center justify-between rounded-lg bg-white/[0.08] p-3 transition-colors hover:bg-white/[0.12]"
+        className="group mt-3 flex items-center justify-between rounded-lg bg-white/[0.08] p-2.5 transition-colors hover:bg-white/[0.12]"
       >
         <div className="flex items-center gap-3">
           <div className="flex h-9 w-9 items-center justify-center rounded-md bg-[#b2dbb8] text-primary">
@@ -44,7 +44,7 @@ export function QuickActionsCard({ className }: { className?: string }) {
         <ArrowRight className="h-4 w-4 text-[#b2dbb8] transition-transform group-hover:translate-x-0.5" />
       </Link>
 
-      <div className="mt-2 grid grid-cols-2 gap-2">
+      <div className="mt-2 grid grid-cols-2 gap-1.5">
         <SecondaryAction icon={FileText} label="Templates" href="/templates" />
         <SecondaryAction icon={Building2} label="Clients" href="/clients" />
         <SecondaryAction icon={Users} label="Team" href="/team" />
@@ -66,7 +66,7 @@ function SecondaryAction({
   return (
     <Link
       href={href}
-      className="flex items-center gap-2 rounded-lg bg-white/[0.06] px-3 py-2.5 text-[12.5px] font-medium text-white/90 transition-colors hover:bg-white/[0.12] hover:text-white"
+      className="flex items-center gap-2 rounded-lg bg-white/[0.06] px-3 py-2 text-[12.5px] font-medium text-white/90 transition-colors hover:bg-white/[0.12] hover:text-white"
     >
       <Icon className="h-[15px] w-[15px] text-[#b2dbb8]" />
       {label}

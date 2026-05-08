@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { safePostAuthPath } from "@/lib/utils/auth-redirect";
@@ -41,6 +42,16 @@ export default async function SignupPage({ searchParams }: SignupPageProps) {
     if (signUpError) {
       redirect("/signup?error=Could%20not%20create%20account.");
     }
+
+    // New signups should behave like a non-remembered session by default.
+    const cookieStore = await cookies();
+    cookieStore.set("keurio_session", "1", {
+      path: "/",
+      sameSite: "lax",
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+    });
+    cookieStore.delete("keurio_remember");
 
     if (nextParam) {
       redirect(`/login?next=${encodeURIComponent(nextParam)}`);

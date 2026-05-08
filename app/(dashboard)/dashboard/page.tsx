@@ -2,6 +2,7 @@ import { DashboardHero } from "@/components/dashboard/dashboard-hero";
 import {
   DashboardFilterBar,
 } from "@/components/dashboard/dashboard-filter-bar";
+import { GetStartedChecklistCard } from "@/components/dashboard/get-started-checklist-card";
 import { InspectionsMetricsDashboard } from "@/components/dashboard/inspections-metrics-dashboard";
 import { QuickActionsCard } from "@/components/dashboard/quick-actions-card";
 import { Button } from "@/components/ui/button";
@@ -12,6 +13,7 @@ import {
   getTemplateOptions,
 } from "@/lib/queries/dashboard-metrics";
 import { parseDashboardFilters } from "@/lib/dashboard-filters";
+import { getOnboardingChecklistStatus } from "@/lib/queries/onboarding-checklist";
 import { getUserDisplayName } from "@/lib/queries/user-display";
 import { Download, Plus } from "lucide-react";
 import Link from "next/link";
@@ -46,12 +48,13 @@ export default async function DashboardHomePage({
   const resolvedSearchParams = (await searchParams) ?? {};
   const filters = parseDashboardFilters(resolvedSearchParams);
 
-  const [metrics, displayName, statuses, templates, clients] = await Promise.all([
+  const [metrics, displayName, statuses, templates, clients, checklistStatus] = await Promise.all([
     getDashboardMetrics(filters),
     getUserDisplayName(),
     getStatusOptions(),
     getTemplateOptions(),
     getClientOptions(),
+    getOnboardingChecklistStatus(),
   ]);
 
   const today = new Date();
@@ -92,8 +95,11 @@ export default async function DashboardHomePage({
         <div className="space-y-6">
           {metrics ? <InspectionsMetricsDashboard metrics={metrics} /> : null}
         </div>
-        <aside className="space-y-6 xl:sticky xl:top-6 xl:self-start">
-          <QuickActionsCard />
+        <aside className="flex flex-col gap-6 xl:h-full xl:justify-between">
+          <QuickActionsCard className="min-h-[176px]" />
+          {checklistStatus && !checklistStatus.allComplete ? (
+            <GetStartedChecklistCard status={checklistStatus} className="min-h-[236px]" />
+          ) : null}
         </aside>
       </div>
     </div>

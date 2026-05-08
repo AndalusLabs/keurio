@@ -1,12 +1,14 @@
 "use client";
 
 import {
+  ArrowLeft,
   Building2,
   ClipboardList,
+  CreditCard,
   FileText,
   LayoutDashboard,
-  LifeBuoy,
   Menu,
+  SlidersHorizontal,
   Users,
   X,
 } from "lucide-react";
@@ -33,6 +35,12 @@ const WORKSPACE_NAV: NavItem[] = [
   { href: "/templates", label: "Templates", icon: FileText },
   { href: "/clients", label: "Clients", icon: Building2 },
   { href: "/team", label: "Team", icon: Users },
+];
+
+const SETTINGS_NAV: NavItem[] = [
+  { href: "/settings/workspace", label: "Workspace", icon: Building2 },
+  { href: "/settings/preferences", label: "Preferences", icon: SlidersHorizontal },
+  { href: "/settings/billing", label: "Billing", icon: CreditCard },
 ];
 
 function isActive(pathname: string, href: string) {
@@ -133,6 +141,8 @@ function SidebarChrome({
   showClose?: boolean;
   onClose?: () => void;
 }) {
+  const isSettingsRoute = pathname.startsWith("/settings");
+
   return (
     <>
       <div className="flex h-16 shrink-0 items-center justify-between border-b border-sidebar-border px-5">
@@ -151,22 +161,34 @@ function SidebarChrome({
         ) : null}
       </div>
       <div className="flex flex-1 flex-col overflow-y-auto px-3 pb-4 pt-3">
-        <NavSection
-          label="WORKSPACE"
-          items={WORKSPACE_NAV}
-          pathname={pathname}
-          onNavigate={onNavigate}
-        />
-        <div className="mt-auto pt-4">
-          <Link
-            href="/support"
-            onClick={onNavigate}
-            className="flex h-9 items-center gap-2.5 rounded-lg px-2.5 text-[13px] font-medium text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-foreground"
-          >
-            <LifeBuoy className="h-[17px] w-[17px]" />
-            Help & support
-          </Link>
-        </div>
+        {isSettingsRoute ? (
+          <div className="mb-1">
+            <Link
+              href="/dashboard"
+              onClick={onNavigate}
+              className="flex h-9 items-center gap-2.5 rounded-lg px-2.5 text-[13px] font-medium text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-foreground"
+            >
+              <ArrowLeft className="h-[17px] w-[17px]" />
+              Back to app
+            </Link>
+          </div>
+        ) : null}
+
+        {isSettingsRoute ? (
+          <NavSection
+            label="SETTINGS"
+            items={SETTINGS_NAV}
+            pathname={pathname}
+            onNavigate={onNavigate}
+          />
+        ) : (
+          <NavSection
+            label="WORKSPACE"
+            items={WORKSPACE_NAV}
+            pathname={pathname}
+            onNavigate={onNavigate}
+          />
+        )}
       </div>
       {workspace ? (
         <div className="border-t border-sidebar-border">
