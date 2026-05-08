@@ -68,8 +68,7 @@ export function WorkspaceSignaturePadDialog({ open, onOpenChange, onSuccess }: P
     setSaving(true);
     try {
       const dataUrl = pad.getTrimmedCanvas().toDataURL("image/png");
-      const res = await fetch(dataUrl);
-      const blob = await res.blob();
+      const blob = dataUrlToBlob(dataUrl);
       const file = new File([blob], "signature.png", { type: "image/png" });
       const fd = new FormData();
       fd.set("file", file);
@@ -81,6 +80,13 @@ export function WorkspaceSignaturePadDialog({ open, onOpenChange, onSuccess }: P
       if (upload.path) onSuccess(upload.path);
       toast({ title: "Signature saved" });
       onOpenChange(false);
+    } catch (error) {
+      toast({
+        title: "Could not save",
+        description:
+          error instanceof Error ? error.message : "Unexpected error while saving signature.",
+        variant: "destructive",
+      });
     } finally {
       setSaving(false);
     }
@@ -148,4 +154,16 @@ export function WorkspaceSignaturePadDialog({ open, onOpenChange, onSuccess }: P
       </DialogContent>
     </Dialog>
   );
+}
+
+function dataUrlToBlob(dataUrl: string): Blob {
+  const [meta, base64 = ""] = dataUrl.split(",");
+  const mimeMatch = meta.match(/data:(.*?);base64/);
+  const mime = mimeMatch?.[1] ?? "image/png";
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return new Blob([bytes], { type: mime });
 }
