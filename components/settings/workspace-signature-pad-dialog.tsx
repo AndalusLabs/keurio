@@ -1,8 +1,8 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { Loader2 } from "lucide-react";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import SignatureCanvas from "react-signature-canvas";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -16,6 +16,10 @@ import { uploadSignature } from "@/lib/actions/settings";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
+const SignatureCanvas = dynamic(() => import("react-signature-canvas"), {
+  ssr: false,
+}) as any;
+
 const CANVAS_H = 192;
 
 type Props = {
@@ -25,7 +29,7 @@ type Props = {
 };
 
 export function WorkspaceSignaturePadDialog({ open, onOpenChange, onSuccess }: Props) {
-  const sigRef = useRef<SignatureCanvas>(null);
+  const sigRef = useRef<any>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
   const [canvasWidth, setCanvasWidth] = useState(560);
   const [saving, setSaving] = useState(false);
@@ -69,7 +73,7 @@ export function WorkspaceSignaturePadDialog({ open, onOpenChange, onSuccess }: P
     try {
       const canvas = pad.getTrimmedCanvas();
       const blob = await new Promise<Blob>((resolve, reject) => {
-        canvas.toBlob((value) => {
+        canvas.toBlob((value: Blob | null) => {
           if (value) resolve(value);
           else reject(new Error("Could not serialize signature image."));
         }, "image/png");
