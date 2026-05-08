@@ -60,6 +60,9 @@ export async function updateSession(request: NextRequest) {
   }
 
   if (user && isLoginRoute) {
+    if (request.nextUrl.searchParams.get("error")) {
+      return supabaseResponse;
+    }
     const inviteNext = safePostAuthPath(request.nextUrl.searchParams.get("next"));
     if (inviteNext) {
       const next = request.nextUrl.clone();
@@ -81,6 +84,17 @@ export async function updateSession(request: NextRequest) {
       .maybeSingle();
 
     if (!membership) {
+      // If user lands on root without an org, do not keep stale session around.
+      if (request.nextUrl.pathname === "/") {
+        await supabase.auth.signOut();
+        const login = request.nextUrl.clone();
+        login.pathname = "/login";
+        login.search = "";
+        const out = NextResponse.redirect(login);
+        out.cookies.delete("keurio_session");
+        out.cookies.delete("keurio_remember");
+        return out;
+      }
       const next = request.nextUrl.clone();
       next.pathname = "/onboarding";
       return NextResponse.redirect(next);

@@ -61,6 +61,8 @@ function formatAxisDate(ymd: string, monthly: boolean): string {
 
 export function InspectionsActivityChart({ data, monthLabel }: Props) {
   const monthly = isMonthlySeries(data);
+  const dailyLabelStep =
+    data.length <= 7 ? 1 : Math.max(5, Math.ceil(data.length / 8));
   return (
     <Card className="overflow-hidden">
       <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0 pb-2">
@@ -100,10 +102,13 @@ export function InspectionsActivityChart({ data, monthLabel }: Props) {
               interval={0}
               minTickGap={0}
               tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
-              tickFormatter={(value) => formatAxisDate(String(value), monthly)}
-              angle={monthly ? 0 : -32}
-              textAnchor={monthly ? "middle" : "end"}
-              height={monthly ? 30 : 56}
+              tickFormatter={(value, index) => {
+                if (!monthly && index % dailyLabelStep !== 0) return "";
+                return formatAxisDate(String(value), monthly);
+              }}
+              angle={0}
+              textAnchor="middle"
+              height={monthly ? 30 : 40}
             />
             <YAxis
               tickLine={false}

@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import { cn } from "@/lib/utils";
 
 /**
@@ -15,13 +18,20 @@ export function DashboardHero({
   weekday: string;   // e.g. "Wednesday"
   className?: string;
 }) {
+  const [greeting] = useState(() => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Good morning";
+    if (hour < 18) return "Good afternoon";
+    return "Good evening";
+  });
+
   return (
     <div className={cn("flex flex-col gap-2", className)}>
       <div className="eyebrow text-primary">
         DASHBOARD · {weekday.toUpperCase()}, {date.toUpperCase()}
       </div>
       <h1 className="max-w-3xl text-hero font-semibold">
-        Good morning, {name}.
+        {greeting}, {name}.
         <span className="font-normal text-muted-foreground">
           {" "}
           Here&apos;s what&apos;s moving today.

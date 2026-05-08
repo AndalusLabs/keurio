@@ -25,33 +25,14 @@ export default async function OnboardingPage({ searchParams }: Props) {
   const ctx = await getOrgContext();
   if (ctx) redirect("/dashboard");
 
-  const [{ data: userRow }, { data: userProfileRow }] = await Promise.all([
-    supabase.from("users").select("full_name").eq("id", user.id).maybeSingle(),
-    supabase
-      .from("user_profiles")
-      .select("first_name, last_name")
-      .eq("user_id", user.id)
-      .maybeSingle(),
-  ]);
-
-  const fromProfileFirst = userProfileRow?.first_name?.trim() ?? "";
-  const fromProfileLast = userProfileRow?.last_name?.trim() ?? "";
-  const fromUsers = userRow?.full_name?.trim() ?? "";
-  let fallbackFirst = "";
-  let fallbackLast = "";
-  if (fromUsers) {
-    const parts = fromUsers.split(/\s+/).filter(Boolean);
-    fallbackFirst = parts[0] ?? "";
-    fallbackLast = parts.slice(1).join(" ");
-  }
-  const defaultFirstName = fromProfileFirst || fallbackFirst;
-  const defaultLastName = fromProfileLast || fallbackLast;
-
   async function submit(formData: FormData) {
     "use server";
     const firstName = String(formData.get("firstName") ?? "");
     const lastName = String(formData.get("lastName") ?? "");
     const organizationName = String(formData.get("organizationName") ?? "");
+    if (!firstName.trim() || !lastName.trim() || !organizationName.trim()) {
+      redirect("/onboarding?error=All%20fields%20are%20required.");
+    }
     const res = await finishSignupOnboarding({
       firstName,
       lastName,
@@ -83,31 +64,38 @@ export default async function OnboardingPage({ searchParams }: Props) {
 
           <form action={submit} className="mt-6 space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="firstName">First name</Label>
+              <Label htmlFor="firstName">
+                First name <span className="text-red-600">*</span>
+              </Label>
               <Input
                 id="firstName"
                 name="firstName"
-                defaultValue={defaultFirstName}
                 placeholder="Jane"
+                autoComplete="off"
                 required
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="lastName">Last name</Label>
+              <Label htmlFor="lastName">
+                Last name <span className="text-red-600">*</span>
+              </Label>
               <Input
                 id="lastName"
                 name="lastName"
-                defaultValue={defaultLastName}
                 placeholder="Doe"
+                autoComplete="off"
                 required
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="organizationName">Organization name</Label>
+              <Label htmlFor="organizationName">
+                Organization name <span className="text-red-600">*</span>
+              </Label>
               <Input
                 id="organizationName"
                 name="organizationName"
                 placeholder="Andalus Labs"
+                autoComplete="off"
                 required
               />
             </div>

@@ -15,7 +15,7 @@ import {
 import { parseDashboardFilters } from "@/lib/dashboard-filters";
 import { getOnboardingChecklistStatus } from "@/lib/queries/onboarding-checklist";
 import { getUserDisplayName } from "@/lib/queries/user-display";
-import { Download, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import Link from "next/link";
 
 function greetingName(full: string | null): string {
@@ -70,10 +70,6 @@ export default async function DashboardHomePage({
           date={formatDayMonth(today)}
         />
         <div className="flex items-center gap-2 lg:pt-1">
-          <Button variant="outline" className="gap-1.5">
-            <Download className="h-4 w-4" />
-            Export report
-          </Button>
           <Button asChild className="gap-1.5">
             <Link href="/inspections/new">
               <Plus className="h-4 w-4" strokeWidth={2.4} />

@@ -39,6 +39,11 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
     });
 
     if (signInError) {
+      // Ensure stale sessions do not bounce users away from /login?error=...
+      await supabase.auth.signOut();
+      const cookieStore = await cookies();
+      cookieStore.delete("keurio_session");
+      cookieStore.delete("keurio_remember");
       redirect("/login?error=Invalid%20email%20or%20password.");
     }
 

@@ -279,34 +279,66 @@ export async function sendInspection(
     process.env.NEXT_PUBLIC_APP_URL ||
     process.env.NEXT_PUBLIC_SITE_URL ||
     "http://localhost:3000";
+  const pdfUrl = `${appUrl}/api/inspections/${id}/pdf`;
   const inspectionUrl = `${appUrl}/inspections/${id}`;
   const completedDate = inspection.completed_at
-    ? new Date(inspection.completed_at).toLocaleDateString("nl-NL")
+    ? new Date(inspection.completed_at).toLocaleDateString("en-GB", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      })
     : "—";
   const clientName = inspection.clients?.company_name ?? "Client";
+  const [{ data: orgRow }, { data: companyProfile }] = await Promise.all([
+    loaded.supabase
+      .from("organizations")
+      .select("name")
+      .eq("id", inspection.organization_id)
+      .maybeSingle(),
+    loaded.supabase
+      .from("company_profiles")
+      .select("company_name")
+      .eq("user_id", loaded.user.id)
+      .maybeSingle(),
+  ]);
+  const organizationName =
+    companyProfile?.company_name?.trim() ||
+    orgRow?.name?.trim() ||
+    "Your organization";
 
   try {
     const resend = getResend();
     await resend.emails.send({
       from: getResendFrom(),
       to: email,
-      subject: `Inspection report: ${inspection.title}`,
+      subject: "Your inspection report is ready",
       html: `
-        <div style="font-family: Arial, sans-serif; color: #0f172a; line-height: 1.5;">
-          <h2 style="margin: 0 0 12px;">${inspection.title}</h2>
-          <p style="margin: 0 0 8px;"><strong>Client:</strong> ${clientName}</p>
-          <p style="margin: 0 0 16px;"><strong>Completed:</strong> ${completedDate}</p>
-          <p style="margin: 0 0 16px;">
-            Your PDF report is ready. The secure link stays valid for 30 days.
-          </p>
-          <p style="margin: 0 0 12px;">
-            <a href="${signed.signedUrl}" style="background: #0f3e18; color: #fff; padding: 10px 14px; text-decoration: none; border-radius: 6px; display: inline-block;">
-              Open PDF report
-            </a>
-          </p>
-          <p style="margin: 0; color: #475569; font-size: 13px;">
-            Inspection detail: <a href="${inspectionUrl}">${inspectionUrl}</a>
-          </p>
+        <div style="margin:0; padding:24px 12px; background:#f3f4f6; font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; color:#0f172a;">
+          <div style="max-width:600px; margin:0 auto; background:#ffffff; border:1px solid #e5e7eb; border-radius:8px; overflow:hidden;">
+            <div style="padding:20px 24px; border-bottom:1px solid #f1f5f9;">
+              <div style="font-size:20px; font-weight:700; color:#0f3e18; line-height:1.2;">Keurio</div>
+              <div style="margin-top:4px; font-size:13px; color:#475569;">${organizationName}</div>
+            </div>
+            <div style="padding:24px;">
+              <h1 style="margin:0 0 16px; font-size:22px; line-height:1.25; color:#0f172a;">Your inspection report is ready</h1>
+              <p style="margin:0 0 8px; font-size:14px;"><strong>Client name:</strong> ${clientName}</p>
+              <p style="margin:0 0 8px; font-size:14px;"><strong>Inspection name:</strong> ${inspection.title}</p>
+              <p style="margin:0 0 16px; font-size:14px;"><strong>Completion date:</strong> ${completedDate}</p>
+              <p style="margin:0 0 22px; font-size:14px; color:#334155;">
+                Your inspector has completed the report. Click the button below to view it.
+              </p>
+              <a
+                href="${pdfUrl}"
+                style="display:inline-block; background:#0f3e18; color:#ffffff; text-decoration:none; padding:11px 16px; border-radius:8px; font-size:14px; font-weight:600;"
+              >
+                View report
+              </a>
+            </div>
+            <div style="padding:14px 24px; border-top:1px solid #f1f5f9; font-size:12px; color:#64748b;">
+              Sent by ${organizationName} via Keurio · keurio.app
+            </div>
+          </div>
+          <div style="display:none; color:#f3f4f6;">${inspectionUrl}</div>
         </div>
       `,
     });

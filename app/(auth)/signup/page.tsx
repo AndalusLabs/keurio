@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { safePostAuthPath } from "@/lib/utils/auth-redirect";
+import { Logo } from "@/components/shared/logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -62,6 +63,9 @@ export default async function SignupPage({ searchParams }: SignupPageProps) {
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md items-center px-4 py-12">
       <div className="w-full rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="mb-5 flex justify-center">
+          <Logo withLink={false} height={44} />
+        </div>
         <h1 className="text-2xl font-semibold text-slate-900">Create account</h1>
         <p className="mt-1 text-sm text-slate-600">
           Start using Keurio with your team.
