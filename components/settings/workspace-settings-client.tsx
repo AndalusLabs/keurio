@@ -98,6 +98,9 @@ export function WorkspaceSettingsClient({
   const [sigPath, setSigPath] = useState(
     initialUserProfile?.signature_storage_path ?? null
   );
+  /** Bumps preview URL when file at same storage path is replaced (upsert). */
+  const [sigPreviewBust, setSigPreviewBust] = useState(0);
+  const profileUpdatedAt = initialUserProfile?.updated_at ?? "";
 
   useEffect(() => {
     setLogoPath(initialCompany?.logo_storage_path ?? null);
@@ -106,6 +109,10 @@ export function WorkspaceSettingsClient({
   useEffect(() => {
     setSigPath(initialUserProfile?.signature_storage_path ?? null);
   }, [initialUserProfile?.signature_storage_path]);
+
+  useEffect(() => {
+    setSigPreviewBust(0);
+  }, [profileUpdatedAt]);
 
   const form = useForm<WorkspaceForm>({
     resolver: zodResolver(workspaceSchema),
@@ -206,7 +213,17 @@ export function WorkspaceSettingsClient({
   }
 
   const logoUrl = logoPath ? profileAssetPublicUrl(logoPath) : "";
-  const sigUrl = sigPath ? profileAssetPublicUrl(sigPath) : "";
+  const sigUrl = (() => {
+    if (!sigPath) return "";
+    const base = profileAssetPublicUrl(sigPath);
+    const v =
+      sigPreviewBust > 0
+        ? `b${sigPreviewBust}`
+        : profileUpdatedAt
+          ? encodeURIComponent(profileUpdatedAt)
+          : "";
+    return v ? `${base}?v=${v}` : base;
+  })();
 
   return (
     <div className="space-y-8">
@@ -338,6 +355,7 @@ export function WorkspaceSettingsClient({
                 <div className="relative h-28 w-full max-w-md overflow-hidden rounded-lg border border-border bg-muted">
                   {sigUrl ? (
                     <Image
+                      key={sigUrl}
                       src={sigUrl}
                       alt="Your saved signature"
                       fill
@@ -397,6 +415,7 @@ export function WorkspaceSettingsClient({
         onOpenChange={setSignatureDialogOpen}
         onSuccess={(path) => {
           setSigPath(path);
+          setSigPreviewBust((n) => n + 1);
           router.refresh();
         }}
       />
