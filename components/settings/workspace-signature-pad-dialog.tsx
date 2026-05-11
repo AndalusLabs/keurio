@@ -12,14 +12,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { uploadSignature } from "@/lib/actions/settings";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
 const SignatureCanvas = dynamic(async () => {
   const mod = await import("react-signature-canvas");
   const Base = mod.default;
-  return forwardRef<any, any>((props, ref) => <Base ref={ref} {...props} />);
+  const Wrapped = forwardRef<any, any>((props, ref) => <Base ref={ref} {...props} />);
+  Wrapped.displayName = "SignatureCanvasNoSSR";
+  return Wrapped;
 }, { ssr: false }) as any;
 
 const CANVAS_H = 192;
@@ -88,9 +89,16 @@ export function WorkspaceSignaturePadDialog({ open, onOpenChange, onSuccess }: P
       const file = new File([blob], "signature.png", { type: "image/png" });
       const fd = new FormData();
       fd.set("file", file);
-      const upload = await uploadSignature(fd);
-      if ("error" in upload) {
-        toast({ title: "Could not save", description: upload.error, variant: "destructive" });
+      const uploadRes = await fetch("/api/settings/signature", {
+        method: "POST",
+        body: fd,
+      });
+      const upload = (await uploadRes.json()) as
+        | { ok: true; path?: string }
+        | { error: string };
+      if (!uploadRes.ok || "error" in upload) {
+        const message = "error" in upload ? upload.error : "Could not save signature.";
+        toast({ title: "Could not save", description: message, variant: "destructive" });
         return;
       }
       if (upload.path) onSuccess(upload.path);
