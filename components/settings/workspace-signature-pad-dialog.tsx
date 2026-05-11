@@ -58,13 +58,27 @@ export function WorkspaceSignaturePadDialog({ open, onOpenChange, onSuccess }: P
   }, [open]);
 
   function handleClear() {
-    sigRef.current?.clear();
+    const pad = sigRef.current as any;
+    if (pad && typeof pad.clear === "function") {
+      pad.clear();
+      return;
+    }
+    const canvas = wrapRef.current?.querySelector("canvas") as HTMLCanvasElement | null;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
   }
 
   async function handleSave() {
-    const pad = sigRef.current;
-    if (!pad) return;
-    if (typeof pad.getTrimmedCanvas !== "function") {
+    const pad = sigRef.current as any;
+    const hasTrimmed = pad && typeof pad.getTrimmedCanvas === "function";
+    const hasIsEmpty = pad && typeof pad.isEmpty === "function";
+    const canvas = hasTrimmed
+      ? (pad.getTrimmedCanvas() as HTMLCanvasElement)
+      : ((wrapRef.current?.querySelector("canvas") as HTMLCanvasElement | null) ?? null);
+
+    if (!canvas) {
       toast({
         title: "Could not save",
         description: "Signature pad is not ready yet. Please try again.",
@@ -72,7 +86,8 @@ export function WorkspaceSignaturePadDialog({ open, onOpenChange, onSuccess }: P
       });
       return;
     }
-    if (pad.isEmpty()) {
+
+    if (hasIsEmpty && pad.isEmpty()) {
       toast({
         title: "Nothing to save",
         description: "Draw your signature first.",
@@ -82,7 +97,6 @@ export function WorkspaceSignaturePadDialog({ open, onOpenChange, onSuccess }: P
     }
     setSaving(true);
     try {
-      const canvas = pad.getTrimmedCanvas();
       const dataUrl = canvas.toDataURL("image/png");
       const response = await fetch(dataUrl);
       const blob = await response.blob();
