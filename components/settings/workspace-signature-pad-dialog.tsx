@@ -52,8 +52,10 @@ export function WorkspaceSignaturePadDialog({ open, onOpenChange, onSuccess }: P
   }, [open]);
 
   useEffect(() => {
-    if (open) {
-      sigRef.current?.clear();
+    if (!open) return;
+    const pad = sigRef.current as any;
+    if (pad && typeof pad.clear === "function") {
+      pad.clear();
     }
   }, [open]);
 
@@ -71,32 +73,47 @@ export function WorkspaceSignaturePadDialog({ open, onOpenChange, onSuccess }: P
   }
 
   async function handleSave() {
-    const pad = sigRef.current as any;
-    const hasTrimmed = pad && typeof pad.getTrimmedCanvas === "function";
-    const hasIsEmpty = pad && typeof pad.isEmpty === "function";
-    const canvas = hasTrimmed
-      ? (pad.getTrimmedCanvas() as HTMLCanvasElement)
-      : ((wrapRef.current?.querySelector("canvas") as HTMLCanvasElement | null) ?? null);
-
-    if (!canvas) {
-      toast({
-        title: "Could not save",
-        description: "Signature pad is not ready yet. Please try again.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (hasIsEmpty && pad.isEmpty()) {
-      toast({
-        title: "Nothing to save",
-        description: "Draw your signature first.",
-        variant: "destructive",
-      });
-      return;
-    }
     setSaving(true);
     try {
+      const pad = sigRef.current as any;
+      const hasTrimmed = pad && typeof pad.getTrimmedCanvas === "function";
+      const hasIsEmpty = pad && typeof pad.isEmpty === "function";
+
+      let canvas: HTMLCanvasElement | null = null;
+      if (hasTrimmed) {
+        try {
+          canvas = pad.getTrimmedCanvas() as HTMLCanvasElement;
+        } catch {
+          canvas = wrapRef.current?.querySelector("canvas") ?? null;
+        }
+      } else {
+        canvas = wrapRef.current?.querySelector("canvas") ?? null;
+      }
+
+      if (!canvas) {
+        toast({
+          title: "Could not save",
+          description: "Signature pad is not ready yet. Please try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (hasIsEmpty) {
+        try {
+          if (pad.isEmpty()) {
+            toast({
+              title: "Nothing to save",
+              description: "Draw your signature first.",
+              variant: "destructive",
+            });
+            return;
+          }
+        } catch {
+          /* ignore — fall through to export canvas */
+        }
+      }
+
       const dataUrl = canvas.toDataURL("image/png");
       const response = await fetch(dataUrl);
       const blob = await response.blob();
