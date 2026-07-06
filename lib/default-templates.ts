@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getOrgContext } from "@/lib/queries/org";
 import type { Database } from "@/types/database";
 
-/** Server-only: ensure org has org-scoped copies of system defaults (no-op if any org template exists). */
+/** Server-only: ensure org has org-scoped copies of all global default templates (idempotent; backfills new defaults). */
 export async function ensureOrgDefaultTemplatesLoaded(): Promise<void> {
   const supabase = await createClient();
   const {

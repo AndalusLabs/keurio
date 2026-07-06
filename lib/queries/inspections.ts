@@ -63,10 +63,10 @@ export async function getInspectionDetail(
         *,
         checklist_items ( * )
       ),
-      clients ( id, company_name, city, email ),
+      clients ( id, company_name, contact_name, address, postal_code, city, phone, email ),
       inspection_results (
         *,
-        checklist_items ( id, label, sort_order ),
+        checklist_items ( id, label, sort_order, item_kind, section_heading ),
         photos ( * )
       )
     `
@@ -100,6 +100,7 @@ export type TemplateListRow = {
   is_default: boolean;
   is_system: boolean;
   organization_id: string | null;
+  standard_code: string | null;
 };
 
 /** Org templates + global system templates not yet copied (same name) into the org. */
@@ -110,7 +111,7 @@ export async function getTemplatesForUser(): Promise<TemplateListRow[]> {
 
   const { data: orgRows, error: orgErr } = await supabase
     .from("checklist_templates")
-    .select("id, name, created_at, is_default, is_system, organization_id")
+    .select("id, name, created_at, is_default, is_system, organization_id, standard_code")
     .eq("organization_id", ctx.organizationId)
     .order("created_at", { ascending: false });
 
@@ -118,7 +119,7 @@ export async function getTemplatesForUser(): Promise<TemplateListRow[]> {
 
   const { data: globalRows } = await supabase
     .from("checklist_templates")
-    .select("id, name, created_at, is_default, is_system, organization_id")
+    .select("id, name, created_at, is_default, is_system, organization_id, standard_code")
     .eq("is_system", true)
     .is("organization_id", null);
 

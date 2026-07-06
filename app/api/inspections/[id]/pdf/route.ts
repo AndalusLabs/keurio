@@ -21,11 +21,11 @@ export async function GET(
     .from("inspections")
     .select(`
       *,
-      checklist_templates ( id, name ),
+      checklist_templates ( id, name, standard_code ),
       clients ( id, company_name, city, email ),
       inspection_results (
         *,
-        checklist_items ( id, label, sort_order ),
+        checklist_items ( id, label, sort_order, item_kind, section_heading ),
         photos ( * )
       )
     `)

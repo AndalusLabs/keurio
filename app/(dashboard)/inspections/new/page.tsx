@@ -12,7 +12,9 @@ export default async function NewInspectionPage() {
     getTemplatesForUser(),
     getClientsForUser(),
   ]);
-  const templates = allTemplates.filter((t) => t.organization_id != null);
+  const templates = allTemplates.filter(
+    (t) => t.organization_id != null || (t.organization_id == null && t.is_system)
+  );
 
   return (
     <div className="mx-auto w-full max-w-5xl space-y-8">

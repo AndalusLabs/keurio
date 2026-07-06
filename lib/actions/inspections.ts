@@ -6,6 +6,7 @@ import { getOrgContext } from "@/lib/queries/org";
 import { getWorkspaceSignature } from "@/lib/queries/workspace";
 import { renderInspectionPdfBuffer } from "@/lib/pdf/inspection-report";
 import { getResend, getResendFrom } from "@/lib/email/resend";
+import { isRunItemComplete, parseItemKind } from "@/lib/inspection-item-meta";
 import type { ResultStatus } from "@/types/database";
 import type { InspectionDetail } from "@/types";
 
@@ -36,11 +37,16 @@ export async function createInspection(formData: {
 
   const { data: template, error: tplErr } = await supabase
     .from("checklist_templates")
-    .select("id")
+    .select("id, organization_id, is_system")
     .eq("id", formData.templateId)
-    .eq("organization_id", ctx.organizationId)
-    .single();
+    .maybeSingle();
   if (tplErr || !template) {
+    return { error: "Invalid template" };
+  }
+  const templateAllowed =
+    template.organization_id === ctx.organizationId ||
+    (template.organization_id == null && template.is_system);
+  if (!templateAllowed) {
     return { error: "Invalid template" };
   }
 
@@ -107,15 +113,20 @@ export async function updateResult(formData: {
   if (formData.status !== undefined) patch.status = formData.status;
   if (formData.notes !== undefined) patch.notes = formData.notes;
 
-  const { error } = await supabase
+  const { data: resRow, error } = await supabase
     .from("inspection_results")
     .update(patch)
-    .eq("id", formData.resultId);
+    .eq("id", formData.resultId)
+    .select("inspection_id")
+    .maybeSingle();
 
   if (error) return { error: error.message };
   revalidatePath("/");
   revalidatePath("/inspections");
   revalidatePath("/run");
+  if (resRow?.inspection_id) {
+    revalidatePath(`/inspections/${resRow.inspection_id}`);
+  }
   return { ok: true };
 }
 
@@ -130,16 +141,37 @@ export async function completeInspection(inspectionId: string) {
 
   const { data: results, error: rErr } = await supabase
     .from("inspection_results")
-    .select("status")
+    .select(
+      `
+      status,
+      notes,
+      checklist_items ( item_kind )
+    `
+    )
     .eq("inspection_id", inspectionId);
 
   if (rErr || !results?.length) {
     return { error: "Could not load results" };
   }
 
-  const incomplete = results.some((r) => r.status == null);
+  const incomplete = results.some((r) => {
+    const row = r as {
+      status: ResultStatus;
+      notes: string | null;
+      checklist_items: { item_kind: string | null } | null;
+    };
+    const kind = parseItemKind(row.checklist_items?.item_kind);
+    return !isRunItemComplete({
+      itemKind: kind,
+      status: row.status,
+      notes: row.notes,
+    });
+  });
   if (incomplete) {
-    return { error: "Mark pass or fail for every item" };
+    return {
+      error:
+        "Vul alle velden in: tekstvelden (waarde invullen) en checklist (pass/fail of ja/nee).",
+    };
   }
 
   const completeQuery = supabase
@@ -181,11 +213,11 @@ async function getInspectionForWorkflow(inspectionId: string) {
     .from("inspections")
     .select(`
       *,
-      checklist_templates ( id, name ),
-      clients ( id, company_name, city, email ),
+      checklist_templates ( id, name, standard_code ),
+      clients ( id, company_name, contact_name, address, postal_code, city, phone, email ),
       inspection_results (
         *,
-        checklist_items ( id, label, sort_order ),
+        checklist_items ( id, label, sort_order, item_kind, section_heading ),
         photos ( * )
       )
     `)

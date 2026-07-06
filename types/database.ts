@@ -52,6 +52,7 @@ export type Database = {
           created_at: string;
           is_default: boolean;
           is_system: boolean;
+          standard_code: string | null;
         };
         Insert: {
           id?: string;
@@ -61,6 +62,7 @@ export type Database = {
           created_at?: string;
           is_default?: boolean;
           is_system?: boolean;
+          standard_code?: string | null;
         };
         Update: {
           id?: string;
@@ -70,6 +72,7 @@ export type Database = {
           created_at?: string;
           is_default?: boolean;
           is_system?: boolean;
+          standard_code?: string | null;
         };
         Relationships: DbRelationship[];
       };
@@ -80,6 +83,8 @@ export type Database = {
           label: string;
           sort_order: number;
           created_at: string;
+          item_kind: string;
+          section_heading: string | null;
         };
         Insert: {
           id?: string;
@@ -87,6 +92,8 @@ export type Database = {
           label: string;
           sort_order?: number;
           created_at?: string;
+          item_kind?: string;
+          section_heading?: string | null;
         };
         Update: {
           id?: string;
@@ -94,6 +101,8 @@ export type Database = {
           label?: string;
           sort_order?: number;
           created_at?: string;
+          item_kind?: string;
+          section_heading?: string | null;
         };
         Relationships: DbRelationship[];
       };

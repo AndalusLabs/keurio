@@ -1,6 +1,6 @@
 "use client";
 
-import { Loader2, Mic, MicOff, Sparkles } from "lucide-react";
+import { Loader2, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -11,28 +11,6 @@ import { updateResult } from "@/lib/actions/inspections";
 import { inspectionPhotoPublicUrl } from "@/lib/utils/storage";
 import type { PhotoRow } from "./item-photos";
 
-/** Minimal Web Speech API typing (global SpeechRecognition types vary by TS/lib). */
-type SpeechRecognitionResultRow = { isFinal: boolean; 0: { transcript: string } };
-type SpeechRecognitionResultList = {
-  length: number;
-  [i: number]: SpeechRecognitionResultRow;
-};
-type SpeechRecognitionResultEvent = {
-  resultIndex: number;
-  results: SpeechRecognitionResultList;
-};
-
-type WebSpeechRecognition = {
-  continuous: boolean;
-  interimResults: boolean;
-  lang: string;
-  start(): void;
-  stop(): void;
-  onresult: ((ev: SpeechRecognitionResultEvent) => void) | null;
-  onerror: (() => void) | null;
-  onend: (() => void) | null;
-};
-
 type ItemNotesProps = {
   resultId: string;
   checklistItem: string;
@@ -41,15 +19,6 @@ type ItemNotesProps = {
   initialNotes: string | null;
   readOnly?: boolean;
 };
-
-function getSpeechRecognitionCtor(): (new () => WebSpeechRecognition) | null {
-  if (typeof window === "undefined") return null;
-  const w = window as unknown as {
-    SpeechRecognition?: new () => WebSpeechRecognition;
-    webkitSpeechRecognition?: new () => WebSpeechRecognition;
-  };
-  return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null;
-}
 
 async function fetchFirstPhotoForAi(
   photos: PhotoRow[]
@@ -94,11 +63,8 @@ export function ItemNotes({
   const router = useRouter();
   const [value, setValue] = useState(initialNotes ?? "");
   const [saving, setSaving] = useState(false);
-  const [recording, setRecording] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiGenerated, setAiGenerated] = useState(false);
-  const [speechOk, setSpeechOk] = useState(false);
-  const recognitionRef = useRef<WebSpeechRecognition | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const resizeTextarea = useCallback(() => {
@@ -109,10 +75,6 @@ export function ItemNotes({
   }, []);
 
   useEffect(() => {
-    setSpeechOk(!!getSpeechRecognitionCtor());
-  }, []);
-
-  useEffect(() => {
     setValue(initialNotes ?? "");
     setAiGenerated(false);
   }, [initialNotes, resultId]);
@@ -120,16 +82,6 @@ export function ItemNotes({
   useEffect(() => {
     resizeTextarea();
   }, [value, resizeTextarea]);
-
-  useEffect(() => {
-    return () => {
-      try {
-        recognitionRef.current?.stop();
-      } catch {
-        /* ignore */
-      }
-    };
-  }, []);
 
   async function save() {
     const trimmed = value.trim();
@@ -142,74 +94,6 @@ export function ItemNotes({
     });
     setSaving(false);
     router.refresh();
-  }
-
-  function startVoice() {
-    const Ctor = getSpeechRecognitionCtor();
-    if (!Ctor) {
-      toast({
-        description:
-          "Voice input is not supported on this browser — please type your findings manually",
-      });
-      return;
-    }
-
-    if (recording) {
-      try {
-        recognitionRef.current?.stop();
-      } catch {
-        /* ignore */
-      }
-      setRecording(false);
-      return;
-    }
-
-    const recognition = new Ctor();
-    recognitionRef.current = recognition;
-    recognition.continuous = false;
-    recognition.interimResults = false;
-    recognition.lang = "nl-NL";
-
-    recognition.onresult = (event: SpeechRecognitionResultEvent) => {
-      let transcript = "";
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        const row = event.results[i];
-        if (row && row.isFinal) {
-          transcript += row[0]?.transcript ?? "";
-        }
-      }
-      transcript = transcript.trim();
-      if (transcript) {
-        setValue((prev) => {
-          const p = prev.trim();
-          return p ? `${p} ${transcript}` : transcript;
-        });
-      }
-    };
-
-    recognition.onerror = () => {
-      setRecording(false);
-      toast({
-        description: "Voice input failed — please type your findings manually",
-        variant: "destructive",
-      });
-    };
-
-    recognition.onend = () => {
-      setRecording(false);
-      recognitionRef.current = null;
-    };
-
-    try {
-      recognition.start();
-      setRecording(true);
-    } catch {
-      setRecording(false);
-      toast({
-        description: "Voice input failed — please type your findings manually",
-        variant: "destructive",
-      });
-    }
   }
 
   async function onGenerate() {
@@ -282,26 +166,6 @@ export function ItemNotes({
 
       {!readOnly ? (
         <div className="flex flex-wrap items-center gap-2">
-          {speechOk ? (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className={`h-11 min-h-[44px] w-11 min-w-[44px] shrink-0 rounded-full p-0 ${
-                recording
-                  ? "animate-pulse border-red-500 text-red-600 hover:border-red-500 hover:text-red-600"
-                  : ""
-              }`}
-              onClick={() => startVoice()}
-              aria-label={recording ? "Stop voice input" : "Speak"}
-            >
-              {recording ? (
-                <MicOff className="h-4 w-4" />
-              ) : (
-                <Mic className="h-4 w-4" />
-              )}
-            </Button>
-          ) : null}
           {hasNotesForAi ? (
             <Button
               type="button"

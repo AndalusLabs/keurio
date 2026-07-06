@@ -1,6 +1,6 @@
 "use client";
 
-import { Copy, Lock, Trash2 } from "lucide-react";
+import { Copy, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -54,8 +54,7 @@ export function TemplatesList({ templates, canAdmin }: Props) {
     <ul className="space-y-3">
       {templates.map((t) => {
         const isGlobal = t.organization_id == null;
-        const showLock = t.is_system;
-        const canUse = !isGlobal;
+        const canUse = t.organization_id != null || t.is_system;
         const showDelete = canAdmin && !isGlobal && !t.is_system;
 
         return (
@@ -70,14 +69,18 @@ export function TemplatesList({ templates, canAdmin }: Props) {
                         Default
                       </span>
                     ) : null}
-                    {showLock ? (
-                      <span className="inline-flex items-center gap-1 text-muted-foreground" title="System template">
-                        <Lock className="h-4 w-4" aria-hidden />
+                    {t.standard_code === "BRL 6000-25" ? (
+                      <span className="rounded-md border border-slate-300 bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-800">
+                        BRL 6000-25
                       </span>
                     ) : null}
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    {isGlobal ? "Library template" : `Created ${formatInspectionDateTime(t.created_at)}`}
+                    {isGlobal && t.is_system
+                      ? "Standaardtemplate (gedeeld)"
+                      : isGlobal
+                        ? "Library template"
+                        : `Created ${formatInspectionDateTime(t.created_at)}`}
                   </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
@@ -86,13 +89,7 @@ export function TemplatesList({ templates, canAdmin }: Props) {
                       <Link href="/inspections/new">Use in inspection</Link>
                     </Button>
                   ) : (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled
-                      className="opacity-60"
-                      title="Duplicate this template into your organization first (admin)"
-                    >
+                    <Button variant="outline" size="sm" disabled className="opacity-60" title="Not available">
                       Use in inspection
                     </Button>
                   )}

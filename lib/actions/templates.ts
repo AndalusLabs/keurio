@@ -22,7 +22,7 @@ export async function duplicateChecklistTemplate(templateId: string) {
 
   const { data: src, error: fetchErr } = await supabase
     .from("checklist_templates")
-    .select("id, name, organization_id, is_system")
+    .select("id, name, organization_id, is_system, standard_code")
     .eq("id", templateId)
     .maybeSingle();
 
@@ -37,7 +37,7 @@ export async function duplicateChecklistTemplate(templateId: string) {
 
   const { data: rawItems, error: itemsErr } = await supabase
     .from("checklist_items")
-    .select("label, sort_order")
+    .select("label, sort_order, item_kind, section_heading")
     .eq("template_id", templateId)
     .order("sort_order", { ascending: true });
 
@@ -55,6 +55,7 @@ export async function duplicateChecklistTemplate(templateId: string) {
       user_id: userId,
       is_default: false,
       is_system: false,
+      standard_code: src.standard_code ?? null,
     })
     .select("id")
     .single();
@@ -67,6 +68,8 @@ export async function duplicateChecklistTemplate(templateId: string) {
         template_id: created.id,
         label: item.label,
         sort_order: item.sort_order ?? 0,
+        item_kind: item.item_kind ?? "pass_fail",
+        section_heading: item.section_heading ?? null,
       }))
     );
     if (itemsErr) {
