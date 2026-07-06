@@ -1,6 +1,6 @@
 import {
   Document,
-  Image,
+  Image as PdfImage,
   Page,
   StyleSheet,
   Text,
@@ -161,7 +161,7 @@ function ResultPhotoStrip({
     <View style={styles.photoRow}>
       {withUri.map(({ p, uri }) => (
         <View key={p.id}>
-          <Image src={uri} style={styles.photoThumb} />
+          <PdfImage src={uri} style={styles.photoThumb} />
           <Text style={styles.photoCaption}>{label}</Text>
         </View>
       ))}

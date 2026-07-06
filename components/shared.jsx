@@ -1,10 +1,14 @@
 // Shared helpers, icons, and data for Keurio dashboards
 
+import Image from 'next/image';
+
 const KeurioLogo = ({ style = {} }) => (
   <div style={{ display: 'flex', alignItems: 'center', ...style }}>
-    <img
+    <Image
       src="/keurio_logo_new.jpg"
       alt="Keurio"
+      width={120}
+      height={32}
       style={{ height: 32, width: 'auto', maxWidth: '100%', objectFit: 'contain' }}
     />
   </div>

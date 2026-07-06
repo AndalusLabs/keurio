@@ -155,16 +155,16 @@ export async function completeInspection(inspectionId: string) {
   }
 
   const incomplete = results.some((r) => {
-    const row = r as {
-      status: ResultStatus;
-      notes: string | null;
-      checklist_items: { item_kind: string | null } | null;
-    };
-    const kind = parseItemKind(row.checklist_items?.item_kind);
+    const ci = r.checklist_items;
+    const itemKind = parseItemKind(
+      Array.isArray(ci)
+        ? (ci[0] as { item_kind?: string | null } | undefined)?.item_kind
+        : (ci as { item_kind?: string | null } | null)?.item_kind
+    );
     return !isRunItemComplete({
-      itemKind: kind,
-      status: row.status,
-      notes: row.notes,
+      itemKind,
+      status: r.status as ResultStatus,
+      notes: r.notes,
     });
   });
   if (incomplete) {
